@@ -2,12 +2,12 @@
 #include "arr_list.h"
 
 
-arr_list arr_list_new()
+arr_list *arr_list_new()
 {
-    arr_list ret;
-    ret.capacity = 1;
-    ret.size = 0;
-    ret.arr = malloc(sizeof(*ret.arr)*ret.capacity);
+    arr_list *ret = malloc(sizeof(*ret));
+    ret->capacity = 1;
+    ret->size = 0;
+    ret->arr = malloc(sizeof(*ret->arr)*ret->capacity);
     return ret;
 }
 
@@ -63,6 +63,7 @@ void arr_list_delete(arr_list *list)
         free(list->arr[i]);
     }
     free(list->arr);
+    free(list);
 }
 
 
