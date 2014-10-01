@@ -93,7 +93,6 @@ void rxnode_add(struct rxnode *n, char *suff, int sufflen, int value)
     {
         struct rxnode *new = rxnode_new(value);
         n->edges[IND(suff[0])] = rxedge_new(suff, sufflen, new);
-        printf("new edge at %c\n", suff[0]);
         return;
     }
     struct rxedge *e = n->edges[IND(suff[0])];
@@ -102,9 +101,7 @@ void rxnode_add(struct rxnode *n, char *suff, int sufflen, int value)
     {
         ++i;
     }
-    //printf("%c\n", suff[i]);
-    //printf("%d\n", i);
-    _rxnode_splitedge(e, i);
+    if(i<e->len) _rxnode_splitedge(e, i);
     rxnode_add(e->node, suff+i, sufflen-i, value);
 }
 
@@ -124,14 +121,11 @@ int rxnode_get(struct rxnode *n, char *suff)
     {
         if(!n->edges)
         {
-            printf("one\n");
             return -1;
         }
         struct rxedge *e = n->edges[IND(*suff)];
         if(!e)
         {
-            printf("%s\n", suff);
-            printf("two\n");
             return -1;
         }
         int i = 0;
@@ -139,7 +133,6 @@ int rxnode_get(struct rxnode *n, char *suff)
         {
             if(suff[i] == '\0')
             {
-                printf("three\n");
                 return -1;
             }
             i++;
