@@ -22,6 +22,20 @@ void triemap_add(triemap* map, char *str)
     map->size++;
 }
 
+void triemap_addonce(triemap* map, char *str)
+{
+    char *cpy = malloc((strlen(str)+1)*sizeof(*cpy));
+    strcpy(cpy, str);
+    int prev = trie_addonce(map->root, cpy, map->size);
+    if(prev == -1)
+    {
+        arr_list_append(map->words, cpy);
+        map->size++;
+    }
+    else
+        free(cpy);
+}
+
 int triemap_get(triemap* map, char *str)
 {
     return trie_get_val(map->root, str);
@@ -71,6 +85,25 @@ int trie_add(trie *t, char *word, int v)
         if(!INSIDE(*word)) return 0;
         if(!_trie_haskid(t, *word)) t->kids[I(*word)] = trie_new();
         return trie_add(t->kids[I(*word)], word+1, v);
+    }
+}
+
+int trie_addonce(trie *t, char *word, int v)
+{
+    if(*word == '\0')
+    {
+        int old = t->v;
+        if(old == -1)
+        {
+            t->v = v;
+        }
+        return old;
+    }
+    else
+    {
+        if(!INSIDE(*word)) return 0;
+        if(!_trie_haskid(t, *word)) t->kids[I(*word)] = trie_new();
+        return trie_addonce(t->kids[I(*word)], word+1, v);
     }
 }
 

@@ -4,6 +4,7 @@
 #include "rxmap.h"
 #include "array_list/arr_list.h"
 
+
 rxmap *rxmap_new()
 {
     rxmap *ret = malloc(sizeof(rxmap));
@@ -44,6 +45,11 @@ int rxmap_get(rxmap *map, char *str)
     return rxnode_get(map->root, str);
 }
 
+char *rxmap_revget(rxmap *map, int ind)
+{
+    return arr_list_get(map->words, ind);
+}
+
 void rxmap_add(rxmap *m, char *str)
 {
     char *cpy = malloc((strlen(str)+1)*sizeof(*cpy));
@@ -51,6 +57,21 @@ void rxmap_add(rxmap *m, char *str)
     arr_list_append(m->words, cpy);
     rxnode_add(m->root, cpy, strlen(str), m->size);
     m->size++;
+}
+
+void rxmap_addonce(rxmap *m, char *str)
+{
+    char *cpy = malloc((strlen(str)+1)*sizeof(*cpy));
+    strcpy(cpy, str);
+    int prev = rxnode_addonce(m->root, cpy, strlen(str), m->size);
+    if(prev == -1)
+    {
+        arr_list_append(m->words, cpy);
+        m->size++;
+    }
+    else{
+        free(cpy);
+    }
 }
 
 struct rxedge *rxedge_new(char* label, int len, struct rxnode *n)
@@ -104,6 +125,39 @@ void rxnode_add(struct rxnode *n, char *suff, int sufflen, int value)
     if(i<e->len) _rxnode_splitedge(e, i);
     rxnode_add(e->node, suff+i, sufflen-i, value);
 }
+
+int rxnode_addonce(struct rxnode *n, char *suff, int sufflen, int value)
+{
+    if(!sufflen)
+    {
+        int old = n->v;
+        if(old == -1)
+        {
+            n->v = value;
+        }
+        return old;
+    }
+    if(!n->edges)
+    {
+        _rxnode_init_edges(n);
+    }
+    if(!n->edges[IND(suff[0])])
+    {
+        struct rxnode *new = rxnode_new(value);
+        n->edges[IND(suff[0])] = rxedge_new(suff, sufflen, new);
+        return -1;
+    }
+    struct rxedge *e = n->edges[IND(suff[0])];
+    int i = 0;
+    while(i < e->len && i < sufflen && e->label[i] == suff[i])
+    {
+        ++i;
+    }
+    if(i<e->len) _rxnode_splitedge(e, i);
+    return rxnode_addonce(e->node, suff+i, sufflen-i, value);
+}
+
+
 
 void _rxnode_splitedge(struct rxedge *e, int len)
 {
@@ -165,5 +219,39 @@ void _rxnode_print_inorder(struct rxnode *n)
         }
     }
 }
+
+
+/*int rxnode_addonce_iter(struct rxnode *n, char *suff, int sufflen, int value)
+{
+    while(*suff != '\0')
+    {
+        if(!n->edges)
+        {
+            _rxnode_init_edges(n);
+        }
+        if(!n->edges[IND(suff[0])])
+        {
+            struct rxnode *new = rxnode_new(value);
+            n->edges[IND(suff[0])] = rxedge_new(suff, sufflen, new);
+            return -1;
+        }
+        struct rxedge *e = n->edges[IND(suff[0])];
+        int i = 0;
+        while(i < e->len && i < sufflen && e->label[i] == suff[i])
+        {
+            ++i;
+        }
+        if(i<e->len) _rxnode_splitedge(e, i);
+        n = e->node;
+        suff += i;
+        sufflen -= i;
+    }
+    int old = n->v;
+    if(old == -1)
+    {
+        n->v = value;
+    }
+    return old;
+}*/
 
 
