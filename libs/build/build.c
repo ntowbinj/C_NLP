@@ -22,7 +22,7 @@ rxmap *build_wordlist(char* filename, int maxlen)
         char **words = tok_words(line, &size);
         for(int i = 0; i<size; i++)
         {
-            rxmap_addonce(ret, words[i]);
+            rxmap_addonce(ret, words[i], NULL);
         }
         free(words);
     }
@@ -35,7 +35,7 @@ int *tokens_to_indeces(rxmap *map, char **words, int len)
     int *ret = malloc(len*sizeof(*ret));
     for(int i = 0; i<len; i++)
     {
-        ret[i] = rxmap_addonce(map, words[i]);
+        ret[i] = rxmap_addonce(map, words[i], NULL);
     }
     return ret;
 }

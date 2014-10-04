@@ -4,17 +4,18 @@
 #include "rxmap.h"
 #include "array_list/arr_list.h"
 
-static int rxnode_addonce(struct rxnode *n, char *suff, int sufflen, int value);
+static int rxnode_addonce(struct rxnode *n, char *suff, int sufflen, int value, void *data);
 static void _rxnode_splitedge(struct rxedge *e, int len);
 static int rxnode_get(struct rxnode *n, char *suff);
-static void rxnode_add(struct rxnode *n, char *suff, int sufflen, int value);
+static void rxnode_add(struct rxnode *n, char *suff, int sufflen, int value, void *data);
 static struct rxnode *rxnode_new(int v);
 
 rxmap *rxmap_new()
 {
     rxmap *ret = malloc(sizeof(rxmap));
     ret->size = 0;
-    ret->words = arr_list_new();
+    ret->keys = arr_list_new();
+    ret->data = arr_list_new();
     ret->root = rxnode_new(-1);
     return ret;
 }
@@ -40,43 +41,58 @@ void rxnode_delete(struct rxnode *root)
 
 void rxmap_delete(rxmap *t)
 {
-    arr_list_delete(t->words);
+    arr_list_delete(t->keys);
+    for(int i = 0; i<t->size; i++)
+    {
+        void *data_i = arr_list_get(t->data, i);
+        free(data_i);
+    }
+    arr_list_delete(t->data);
     rxnode_delete(t->root);
     free(t);
 }
 
-int rxmap_get(rxmap *map, char *str)
+int rxmap_get_indx(rxmap *map, char *str)
 {
     return rxnode_get(map->root, str);
 }
 
-char *rxmap_revget(rxmap *map, int ind)
+char *rxmap_revget_indx(rxmap *map, int ind)
 {
-    return arr_list_get(map->words, ind);
+    return arr_list_get(map->keys, ind);
 }
 
-void rxmap_add(rxmap *m, char *str)
+char *rxmap_revget_data(rxmap *map, int ind)
+{
+    return arr_list_get(map->data, ind);
+}
+
+// expects data to be on heap, not str
+void rxmap_add(rxmap *m, char *str, void *data)
 {
     char *cpy = malloc((strlen(str)+1)*sizeof(*cpy));
     strcpy(cpy, str);
-    arr_list_append(m->words, cpy);
-    rxnode_add(m->root, cpy, strlen(str), m->size);
+    arr_list_append(m->keys, cpy);
+    arr_list_append(m->data, data);
+    rxnode_add(m->root, cpy, strlen(str), m->size, data);
     m->size++;
 }
 
-int rxmap_addonce(rxmap *m, char *str)
+int rxmap_addonce(rxmap *m, char *str, void *data)
 {
     char *cpy = malloc((strlen(str)+1)*sizeof(*cpy));
     strcpy(cpy, str);
-    int prev = rxnode_addonce(m->root, cpy, strlen(str), m->size);
+    int prev = rxnode_addonce(m->root, cpy, strlen(str), m->size, data);
     if(prev == -1)
     {
-        arr_list_append(m->words, cpy);
+        arr_list_append(m->keys, cpy);
+        arr_list_append(m->data, data);
         m->size++;
         return m->size-1;
     }
     else{
         free(cpy);
+        free(data);
         return prev;
     }
 }
@@ -106,11 +122,12 @@ void _rxnode_init_edges(struct rxnode *n)
     n->edges = calloc(ALPH,sizeof(*n->edges));
 }
 
-void rxnode_add(struct rxnode *n, char *suff, int sufflen, int value)
+void rxnode_add(struct rxnode *n, char *suff, int sufflen, int value, void *data)
 {
     if(!sufflen)
     {
         n->v = value;
+        n->data = data;
         return;
     }
     if(!n->edges)
@@ -130,10 +147,10 @@ void rxnode_add(struct rxnode *n, char *suff, int sufflen, int value)
         ++i;
     }
     if(i<e->len) _rxnode_splitedge(e, i);
-    rxnode_add(e->node, suff+i, sufflen-i, value);
+    rxnode_add(e->node, suff+i, sufflen-i, value, data);
 }
 
-int rxnode_addonce(struct rxnode *n, char *suff, int sufflen, int value)
+int rxnode_addonce(struct rxnode *n, char *suff, int sufflen, int value, void *data)
 {
     if(!sufflen)
     {
@@ -161,7 +178,7 @@ int rxnode_addonce(struct rxnode *n, char *suff, int sufflen, int value)
         ++i;
     }
     if(i<e->len) _rxnode_splitedge(e, i);
-    return rxnode_addonce(e->node, suff+i, sufflen-i, value);
+    return rxnode_addonce(e->node, suff+i, sufflen-i, value, data);
 }
 
 

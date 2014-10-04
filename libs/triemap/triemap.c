@@ -41,7 +41,7 @@ int triemap_get(triemap* map, char *str)
     return trie_get_val(map->root, str);
 }
 
-char* triemap_revget(triemap* map, int ind)
+char* triemap_revget_indx(triemap* map, int ind)
 {
     return arr_list_get(map->words, ind);
 }

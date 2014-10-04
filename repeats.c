@@ -14,7 +14,8 @@ int main(int argc, char *argv[])
 {
     if(argc < 2)
     {
-        fprintf(stderr, "wrong args\n. give number");
+        fprintf(stderr, "wrong args.\ngive number.\n");
+        exit(1);
     }
     int count = atoi(argv[1]);
     MYSQL *conn;
@@ -22,7 +23,7 @@ int main(int argc, char *argv[])
     MYSQL_RES *result = mysql_get_part(conn, 93);
     MYSQL_ROW row;
     rxmap *map = rxmap_new();
-    arr_list *dups = arr_list_new();
+    rxmap *dups = rxmap_new();
     int part, rownum;
     part = rownum = 0;
     while(part<NUMPARTS && rownum<count)

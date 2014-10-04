@@ -13,12 +13,6 @@
 #include "triemap/triemap.h"
 #include "tokenize/tokenize.h"
 
-#define MAP rxmap
-#define MAP_get rxmap_get
-#define MAP_addonce rxmap_addonce
-#define MAP_revget rxmap_revget
-#define MAP_new rxmap_new
-#define MAP_delete rxmap_delete
 
 void small()
 {
@@ -26,21 +20,21 @@ void small()
     int size;
     char *str = malloc(sizeof(*str)*(strlen(strstack)+1));
     strcpy(str, strstack);
-    MAP *map = MAP_new();
+    rxmap *map = rxmap_new();
     char **toks = tok_words(str, &size);
     for(int i = 0; i<size; i++)
     {
         char* w = *(toks+i);
-        MAP_addonce(map, w);
+        rxmap_addonce(map, w, NULL);
     }
     for(int i = 0; i<map->size; i++)
     {
-        char *word = MAP_revget(map, i);
-        printf("%s:\t\t%d\n", word, MAP_get(map, word));
+        char *word = rxmap_revget_indx(map, i);
+        printf("%s:\t\t%d\n", word, rxmap_get_indx(map, word));
     }
     free(toks);
     free(str);
-    MAP_delete(map);
+    rxmap_delete(map);
 }
 
 void large(int lim){
@@ -49,7 +43,7 @@ void large(int lim){
     MYSQL_RES *result = mysql_get_part(conn, 93);
     MYSQL_ROW row;
     int rownum = 0;
-    MAP *map = MAP_new();
+    rxmap *map = rxmap_new();
     int count = 0;
     while((row = mysql_fetch_row(result)) && count<lim)
     {
@@ -59,17 +53,17 @@ void large(int lim){
         for(int i = 0; i<size; i++)
         {
             char* w = *(toks+i);
-            MAP_addonce(map, w);
+            rxmap_addonce(map, w, NULL);
         }
         free(toks);
         rownum++;
     }
     for(int i = 0; i<map->size; i++)
     {
-        char *word = MAP_revget(map, i);
-        printf("%s:\t%d\n", word, MAP_get(map, word));
+        char *word = rxmap_revget_indx(map, i);
+        printf("%s:\t%d\n", word, rxmap_get_indx(map, word));
     }
-    MAP_delete(map);
+    rxmap_delete(map);
     mysql_free_result(result);
     mysql_finish(conn);
 }
