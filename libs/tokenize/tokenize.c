@@ -1,9 +1,66 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h> 
 #include "tokenize.h"
+#define SHIFT ('A' - 'a')
+#define WHITE(c) (c == ' ' || c == '\n' || c == '\0')
+
 
 
 char **tok_words(char *line, int *size)
+{
+    char *ahead, *behind, endpt;
+    ahead = behind = line;
+    int wordc = 0;
+    char **words = malloc(strlen(line) * sizeof(*words));
+    do
+    {
+        while(WHITE(*behind) && *behind != '\0')
+        {
+            behind++;
+        }
+        if(*behind == '\0') break;
+        ahead = behind;
+        while(!WHITE(*ahead) && *ahead != '\0')
+        {
+            if(*ahead == '.' || *ahead == ',' || *ahead == '!' || *ahead == '-')
+            {
+                *ahead = ' ';
+                break;
+            }
+            ahead++;
+        }
+        char *walk_ahead, *walk_behind;
+        walk_ahead = walk_behind = behind;
+        endpt = *ahead;
+        while(walk_ahead < ahead)
+        {
+            if(ALPH_INSIDE(*walk_ahead))
+            {
+                *(walk_behind++) = *walk_ahead;
+            }
+            else if(ALPH_INSIDE(*walk_ahead - SHIFT))
+            {
+                *(walk_behind++) = *walk_ahead - SHIFT;
+            }
+            else if(*walk_ahead != '\'')
+            {
+                break;
+            }
+            walk_ahead++;
+        }
+        if(walk_ahead == ahead)
+        {
+            words[wordc++] = behind;
+            *walk_behind = '\0';
+        }
+        behind = ahead+1;
+    } while(endpt != '\0');
+    *size = wordc;
+    return words;
+}
+
+/*char **tok_words_naive(char *line, int *size)
 {
     int s = OUT;
     int wordc = 0;
@@ -12,9 +69,8 @@ char **tok_words(char *line, int *size)
     {
         if(!ALPH_INSIDE(*line))
         {
-            int shift = 'A' - 'a';
-            if(ALPH_INSIDE(*line - shift))
-                *line -= shift;
+            if(ALPH_INSIDE(*line - SHIFT))
+                *line -= SHIFT;
             else
                 *line = ' ';
         }
@@ -33,8 +89,4 @@ char **tok_words(char *line, int *size)
     }
     *size = wordc;
     return words;
-}
-    
-
-
-
+}*/

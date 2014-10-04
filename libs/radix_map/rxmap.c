@@ -4,6 +4,11 @@
 #include "rxmap.h"
 #include "array_list/arr_list.h"
 
+static int rxnode_addonce(struct rxnode *n, char *suff, int sufflen, int value);
+static void _rxnode_splitedge(struct rxedge *e, int len);
+static int rxnode_get(struct rxnode *n, char *suff);
+static void rxnode_add(struct rxnode *n, char *suff, int sufflen, int value);
+static struct rxnode *rxnode_new(int v);
 
 rxmap *rxmap_new()
 {
