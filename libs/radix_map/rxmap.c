@@ -64,7 +64,7 @@ void rxmap_add(rxmap *m, char *str)
     m->size++;
 }
 
-void rxmap_addonce(rxmap *m, char *str)
+int rxmap_addonce(rxmap *m, char *str)
 {
     char *cpy = malloc((strlen(str)+1)*sizeof(*cpy));
     strcpy(cpy, str);
@@ -73,9 +73,11 @@ void rxmap_addonce(rxmap *m, char *str)
     {
         arr_list_append(m->words, cpy);
         m->size++;
+        return m->size-1;
     }
     else{
         free(cpy);
+        return prev;
     }
 }
 

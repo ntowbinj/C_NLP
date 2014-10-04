@@ -11,15 +11,9 @@ arr_list *arr_list_new()
     return ret;
 }
 
-void _arr_list_grow(arr_list *list)
+static void _arr_list_resize(arr_list *list, int newcap)
 {
-    list->capacity *= RESIZE;
-    list->arr = realloc(list->arr, sizeof(*list->arr)*list->capacity);
-}
-
-void _arr_list_shrink(arr_list *list)
-{
-    list->capacity /= RESIZE;
+    list->capacity = newcap;
     list->arr = realloc(list->arr, sizeof(*list->arr)*list->capacity);
 }
 
@@ -30,9 +24,18 @@ void arr_list_append(arr_list *list, void *value)
     list->size += 1;
     if(list->size == list->capacity)
     {
-        _arr_list_grow(list);
+        _arr_list_resize(list, list->capacity*RESIZE);
     }
 }
+
+/*void arr_list_setsize(arr_list *list, int size)
+{
+    if(size < list->size)
+    {
+        list->size = size;
+    }
+    _arr_list_resize(list, size);
+}*/
 
 void *arr_list_pop(arr_list *list)
 {
@@ -40,7 +43,7 @@ void *arr_list_pop(arr_list *list)
     void *ret = list->arr[list->size];
     if(list->size < list->capacity/SHRINKFACTOR)
     {
-        _arr_list_shrink(list);
+        _arr_list_resize(list, list->capacity/RESIZE);
     }
     return ret;
 }

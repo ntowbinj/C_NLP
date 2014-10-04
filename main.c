@@ -14,4 +14,5 @@ int main()
     rxmap *map = build_wordlist(PROJECT_ROOT""WORDLIST, MAXLEN);
     printf("%d\n", rxmap_get(map, "smart"));
     printf("%d\n", map->size);
+    rxmap_delete(map);
 }

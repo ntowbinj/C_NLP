@@ -5,10 +5,13 @@ CFLAGS := -g -std=c99 -Wall -pedantic
 SQLFLAGS := $(shell mysql_config --cflags)
 SQLLIBS := $(shell mysql_config --libs)
 
-all: tests main clean
+all: tests mains clean
 
-main: libraries main.c config.h
-	$(CC) $(CFLAGS) $(SQLFLAGS) main.c $(wildcard libraries/*) -I$(INCLUDE_PATH) $(SQLLIBS) -ljansson -lm -o main.out
+mains: libraries main.c config.h
+	for main in $(wildcard *.c); do\
+	    exec=`echo $$main | cut -d"." -f1`;\
+	    $(CC) $(CFLAGS) $(SQLFLAGS) $$main $(wildcard libraries/*) -I$(INCLUDE_PATH) $(SQLLIBS) -ljansson -lm -o $$exec.out; \
+	done;
 
 tests: libraries tests/*.c
 	for test in $(wildcard tests/*.c); do\
