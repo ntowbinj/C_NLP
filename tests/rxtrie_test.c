@@ -10,7 +10,7 @@ int main()
     rxmap_add(index, "candycane", NULL);
     rxmap_add(index, "candy", NULL);
     rxmap_add(index, "castro", NULL);
-    _rxnode_print_inorder(index->root);
+    rxnode_print_inorder(index->root);
     printf("castro: %d\n", rxmap_get_indx(index, "castro"));
     rxmap_delete(index);
 }

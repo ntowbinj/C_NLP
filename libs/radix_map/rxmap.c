@@ -166,39 +166,6 @@ struct rxnode *rxnode_add(struct rxnode *n, char *suff, int sufflen)
     return rxnode_add(e->node, suff+i, sufflen-i);
 }
 
-int rxnode_addonce(struct rxnode *n, char *suff, int sufflen, int value, void *data)
-{
-    if(!sufflen)
-    {
-        int old = n->v;
-        if(old == -1)
-        {
-            n->v = value;
-        }
-        return old;
-    }
-    if(!n->edges)
-    {
-        rxnode_init_edges(n);
-    }
-    if(!n->edges[IND(suff[0])])
-    {
-        struct rxnode *new = rxnode_new(value);
-        n->edges[IND(suff[0])] = rxedge_new(suff, sufflen, new);
-        return -1;
-    }
-    struct rxedge *e = n->edges[IND(suff[0])];
-    int i = 0;
-    while(i < e->len && i < sufflen && e->label[i] == suff[i])
-    {
-        ++i;
-    }
-    if(i<e->len) rxnode_splitedge(e, i);
-    return rxnode_addonce(e->node, suff+i, sufflen-i, value, data);
-}
-
-
-
 void rxnode_splitedge(struct rxedge *e, int len)
 {
     struct rxnode *new = rxnode_new(-1);
