@@ -65,8 +65,12 @@ void arr_list_delete(arr_list *list)
     {
         free(list->arr[i]);
     }
+    arr_list_delete_no_free_data(list);
+}
+
+void arr_list_delete_no_free_data(arr_list *list)
+{
     free(list->arr);
     free(list);
 }
-
 

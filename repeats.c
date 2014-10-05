@@ -9,6 +9,10 @@
 
 #include "config.h"
 
+typedef struct
+{
+    int v;
+} dupcount;
 
 int main(int argc, char *argv[])
 {
@@ -23,7 +27,6 @@ int main(int argc, char *argv[])
     MYSQL_RES *result = mysql_get_part(conn, 93);
     MYSQL_ROW row;
     rxmap *map = rxmap_new();
-    rxmap *dups = rxmap_new();
     int part, rownum;
     part = rownum = 0;
     while(part<NUMPARTS && rownum<count)
@@ -34,19 +37,12 @@ int main(int argc, char *argv[])
             int size;
             char **toks = tok_words(row[0], &size);
             int *indeces = tokens_to_indeces(map, toks, size);
-            /*for(int i = 1; i<size; i++)
-            {
-                if(indeces[i] == indeces[i-1])
-                {
-                    arr_list_add(
-*/
             free(toks);
             free(indeces);
             rownum++;
         }
         mysql_free_result(result);
     }
-    arr_list_delete(dups);
     rxmap_delete(map);
     mysql_finish(conn);
 }

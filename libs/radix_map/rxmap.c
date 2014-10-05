@@ -40,13 +40,18 @@ void rxnode_delete(struct rxnode *root)
 
 void rxmap_delete(rxmap *t)
 {
-    arr_list_delete(t->keys);
     for(int i = 0; i<t->size; i++)
     {
         void *data_i = arr_list_get(t->data, i);
         free(data_i);
     }
-    arr_list_delete(t->data);
+    rxmap_delete_no_free_data(t);
+}
+
+void rxmap_delete_no_free_data(rxmap *t)
+{
+    arr_list_delete(t->keys);
+    arr_list_delete_no_free_data(t->data);
     rxnode_delete(t->root);
     free(t);
 }
