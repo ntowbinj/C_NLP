@@ -4,10 +4,9 @@
 #include "rxmap.h"
 #include "array_list/arr_list.h"
 
-static int rxnode_addonce(struct rxnode *n, char *suff, int sufflen, int value, void *data);
-static void _rxnode_splitedge(struct rxedge *e, int len);
-static int rxnode_get(struct rxnode *n, char *suff);
-static void rxnode_add(struct rxnode *n, char *suff, int sufflen, int value, void *data);
+static void rxnode_splitedge(struct rxedge *e, int len);
+static struct rxnode *rxnode_get(struct rxnode *n, char *suff);
+static struct rxnode *rxnode_add(struct rxnode *n, char *suff, int sufflen);
 static struct rxnode *rxnode_new(int v);
 
 rxmap *rxmap_new()
@@ -52,9 +51,18 @@ void rxmap_delete(rxmap *t)
     free(t);
 }
 
+void *rxmap_get_data(rxmap *map, char *str)
+{
+    struct rxnode *n = rxnode_get(map->root, str);
+    if(n) return n->data;
+    else return NULL;
+}
+
 int rxmap_get_indx(rxmap *map, char *str)
 {
-    return rxnode_get(map->root, str);
+    struct rxnode *n = rxnode_get(map->root, str);
+    if(n) return n->v;
+    else return -1;
 }
 
 char *rxmap_revget_indx(rxmap *map, int ind)
@@ -74,7 +82,9 @@ void rxmap_add(rxmap *m, char *str, void *data)
     strcpy(cpy, str);
     arr_list_append(m->keys, cpy);
     arr_list_append(m->data, data);
-    rxnode_add(m->root, cpy, strlen(str), m->size, data);
+    struct rxnode *n = rxnode_add(m->root, cpy, strlen(str));
+    n->v = m->size;
+    n->data = data;
     m->size++;
 }
 
@@ -82,11 +92,14 @@ int rxmap_addonce(rxmap *m, char *str, void *data)
 {
     char *cpy = malloc((strlen(str)+1)*sizeof(*cpy));
     strcpy(cpy, str);
-    int prev = rxnode_addonce(m->root, cpy, strlen(str), m->size, data);
+    struct rxnode *n = rxnode_add(m->root, cpy, strlen(str));
+    int prev = n->v;
     if(prev == -1)
     {
         arr_list_append(m->keys, cpy);
         arr_list_append(m->data, data);
+        n->v = m->size;
+        n->data = data;
         m->size++;
         return m->size-1;
     }
@@ -117,28 +130,26 @@ struct rxnode *rxnode_new(int v)
     return ret;
 }
 
-void _rxnode_init_edges(struct rxnode *n)
+void rxnode_init_edges(struct rxnode *n)
 {
     n->edges = calloc(ALPH,sizeof(*n->edges));
 }
 
-void rxnode_add(struct rxnode *n, char *suff, int sufflen, int value, void *data)
+struct rxnode *rxnode_add(struct rxnode *n, char *suff, int sufflen)
 {
     if(!sufflen)
     {
-        n->v = value;
-        n->data = data;
-        return;
+        return n;
     }
     if(!n->edges)
     {
-        _rxnode_init_edges(n);
+        rxnode_init_edges(n);
     }
     if(!n->edges[IND(suff[0])])
     {
-        struct rxnode *new = rxnode_new(value);
+        struct rxnode *new = rxnode_new(-1);
         n->edges[IND(suff[0])] = rxedge_new(suff, sufflen, new);
-        return;
+        return new;
     }
     struct rxedge *e = n->edges[IND(suff[0])];
     int i = 0;
@@ -146,8 +157,8 @@ void rxnode_add(struct rxnode *n, char *suff, int sufflen, int value, void *data
     {
         ++i;
     }
-    if(i<e->len) _rxnode_splitedge(e, i);
-    rxnode_add(e->node, suff+i, sufflen-i, value, data);
+    if(i<e->len) rxnode_splitedge(e, i);
+    return rxnode_add(e->node, suff+i, sufflen-i);
 }
 
 int rxnode_addonce(struct rxnode *n, char *suff, int sufflen, int value, void *data)
@@ -163,7 +174,7 @@ int rxnode_addonce(struct rxnode *n, char *suff, int sufflen, int value, void *d
     }
     if(!n->edges)
     {
-        _rxnode_init_edges(n);
+        rxnode_init_edges(n);
     }
     if(!n->edges[IND(suff[0])])
     {
@@ -177,53 +188,53 @@ int rxnode_addonce(struct rxnode *n, char *suff, int sufflen, int value, void *d
     {
         ++i;
     }
-    if(i<e->len) _rxnode_splitedge(e, i);
+    if(i<e->len) rxnode_splitedge(e, i);
     return rxnode_addonce(e->node, suff+i, sufflen-i, value, data);
 }
 
 
 
-void _rxnode_splitedge(struct rxedge *e, int len)
+void rxnode_splitedge(struct rxedge *e, int len)
 {
     struct rxnode *new = rxnode_new(-1);
     struct rxedge *newedge = rxedge_new(e->label+len, e->len-len, e->node);
     e->len = len;
     e->node = new;
-    _rxnode_init_edges(new);
+    rxnode_init_edges(new);
     new->edges[IND(e->label[len])] = newedge;
 }
 
-int rxnode_get(struct rxnode *n, char *suff)
+struct rxnode *rxnode_get(struct rxnode *n, char *suff)
 {
     while(*suff != '\0')
     {
         if(!n->edges)
         {
-            return -1;
+            return NULL;
         }
         struct rxedge *e = n->edges[IND(*suff)];
         if(!e)
         {
-            return -1;
+            return NULL;
         }
         int i = 0;
         while(i < e->len && e->label[i] == suff[i])
         {
             if(suff[i] == '\0')
             {
-                return -1;
+                return NULL;
             }
             i++;
         }
         suff = suff+i;
         n = e->node;
     }
-    return n->v;
+    return n;
 }
 
 
     
-void _rxnode_print_inorder(struct rxnode *n)
+void rxnode_print_inorder(struct rxnode *n)
 {
     if(n)
     {
@@ -237,7 +248,7 @@ void _rxnode_print_inorder(struct rxnode *n)
             {
                 if(n->edges[i])
                 {
-                    _rxnode_print_inorder(n->edges[i]->node);
+                    rxnode_print_inorder(n->edges[i]->node);
                 }
             }
         }
@@ -251,7 +262,7 @@ void _rxnode_print_inorder(struct rxnode *n)
     {
         if(!n->edges)
         {
-            _rxnode_init_edges(n);
+            rxnode_init_edges(n);
         }
         if(!n->edges[IND(suff[0])])
         {
@@ -265,7 +276,7 @@ void _rxnode_print_inorder(struct rxnode *n)
         {
             ++i;
         }
-        if(i<e->len) _rxnode_splitedge(e, i);
+        if(i<e->len) rxnode_splitedge(e, i);
         n = e->node;
         suff += i;
         sufflen -= i;
