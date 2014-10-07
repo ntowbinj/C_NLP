@@ -25,12 +25,12 @@ void small()
     for(int i = 0; i<size; i++)
     {
         char* w = *(toks+i);
-        rxmap_addonce(map, w, NULL);
+        rxmap_addonce(map, w);
     }
     for(int i = 0; i<map->size; i++)
     {
-        char *word = rxmap_revget_indx(map, i);
-        printf("%s:\t\t%d\n", word, rxmap_get_indx(map, word));
+        char *word = rxmap_revget(map, i);
+        printf("%s:\t\t%d\n", word, rxmap_get(map, word));
     }
     free(toks);
     free(str);
@@ -53,15 +53,15 @@ void large(int lim){
         for(int i = 0; i<size; i++)
         {
             char* w = *(toks+i);
-            rxmap_addonce(map, w, NULL);
+            rxmap_addonce(map, w);
         }
         free(toks);
         rownum++;
     }
     for(int i = 0; i<map->size; i++)
     {
-        char *word = rxmap_revget_indx(map, i);
-        printf("%s:\t%d\n", word, rxmap_get_indx(map, word));
+        char *word = rxmap_revget(map, i);
+        printf("%s:\t%d\n", word, rxmap_get(map, word));
     }
     rxmap_delete(map);
     mysql_free_result(result);
@@ -70,9 +70,10 @@ void large(int lim){
 
 int main(int argc, char *argv[])
 {
-    if(!argc)
+    if(argc < 2)
     {
-        fprintf(stderr, "wrong args\n. give number");
+        fprintf(stderr, "wrong args.\ngive number.\n");
+        exit(1);
     }
     large(atoi(argv[1]));
 }

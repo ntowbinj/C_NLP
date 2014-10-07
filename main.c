@@ -12,7 +12,7 @@ int main()
 {
     printf("hello\n");
     rxmap *map = build_wordlist(PROJECT_ROOT""WORDLIST, MAXLEN);
-    printf("%d\n", rxmap_get_indx(map, "smart"));
+    printf("%d\n", rxmap_get(map, "smart"));
     printf("%d\n", map->size);
     rxmap_delete(map);
 }

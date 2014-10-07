@@ -1,3 +1,9 @@
+/*
+ *
+ * show words that get used twice or more in a row
+ *
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,10 +15,16 @@
 
 #include "config.h"
 
-typedef struct
+void print_dups(char **toks, int *indeces, int len)
 {
-    int v;
-} dupcount;
+    for(int i = 0; i<len-1; i++)
+    {
+        if(indeces[i] == indeces[i+1])
+        {
+            printf("%s\n", toks[i]);
+        }
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -37,6 +49,7 @@ int main(int argc, char *argv[])
             int size;
             char **toks = tok_words(row[0], &size);
             int *indeces = tokens_to_indeces(map, toks, size);
+            print_dups(toks, indeces, size);
             free(toks);
             free(indeces);
             rownum++;
@@ -46,4 +59,5 @@ int main(int argc, char *argv[])
     rxmap_delete(map);
     mysql_finish(conn);
 }
+
 

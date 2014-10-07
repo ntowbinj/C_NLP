@@ -51,7 +51,11 @@ char **tok_words(char *line, int *size)
         }
         if(walk_ahead == ahead)
         {
-            words[wordc++] = behind;
+            //don't add if empty
+            if(walk_behind - behind)
+            {
+               words[wordc++] = behind;
+            }
             *walk_behind = '\0';
         }
         behind = ahead+1;

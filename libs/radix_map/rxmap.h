@@ -12,7 +12,6 @@ typedef struct
     int size;
     struct rxnode *root;
     arr_list *keys;
-    arr_list *data;
 } rxmap;
 
 struct rxnode
@@ -31,15 +30,13 @@ struct rxedge
 
 
 rxmap *rxmap_new();
-void rxmap_add(rxmap *t, char *str, void *data);
+void rxmap_add(rxmap *t, char *str);
 void rxnode_print_inorder(struct rxnode *n);
 void rxmap_delete(rxmap *t);
 void rxmap_delete_no_free_data(rxmap *t);
-int rxmap_get_indx(rxmap *map, char *str);
-void *rxmap_get_data(rxmap *map, char *str);
-char *rxmap_revget_data(rxmap *map, int ind);
-char *rxmap_revget_indx(rxmap *map, int ind);
-int rxmap_addonce(rxmap *m, char *str, void *data);
+int rxmap_get(rxmap *map, char *str);
+char *rxmap_revget(rxmap *map, int ind);
+int rxmap_addonce(rxmap *m, char *str);
 
 #endif
 
