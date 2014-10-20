@@ -1,14 +1,14 @@
 LIBS=$(wildcard libs/*)
 INCLUDE_PATH=libs/
 CC = gcc
-CFLAGS := -g -std=c99 -Wall -pedantic
+CFLAGS := -g -std=c99 -Wall -pedantic 
 SQLFLAGS := $(shell mysql_config --cflags)
 SQLLIBS := $(shell mysql_config --libs)
 
 all: tests mains clean
 
-mains: libraries main.c config.h
-	for main in $(wildcard *.c); do\
+mains: src/*.[ch]
+	for main in $(wildcard src/*.c); do\
 	    exec=`echo $$main | cut -d"." -f1`;\
 	    $(CC) $(CFLAGS) $(SQLFLAGS) $$main $(wildcard libraries/*) -I$(INCLUDE_PATH) $(SQLLIBS) -ljansson -lm -o $$exec.out; \
 	done;
@@ -23,7 +23,7 @@ libraries:
 	mkdir libraries/
 	for dir in $(LIBS); do \
 	    cd $$dir; \
-	    $(CC) $(CFLAGS) $(SQLFLAGS) -I../ -c *.c $(SQLLIBS) ; \
+	    $(CC) $(CFLAGS) $(SQLFLAGS) -I../ -c *.c  ; \
 	    mv *.o ../../libraries; \
 	    cd -; \
 	done;
