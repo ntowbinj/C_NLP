@@ -6,6 +6,7 @@
 #include "radix_map/rxmap.h"
 #include "tokenize/tokenize.h"
 #include "build/build.h"
+#include "util/util.h"
 
 #include "config.h"
 
@@ -41,33 +42,6 @@ void build(int *occurences, rxmap *words, int count)
     }
 }
 
-int maxindex(int *arr, int len)
-{
-    int maxdex = -1;
-    if(len)
-    {
-        int max = arr[0];
-        for(int i = 0; i<len; i++)
-        {
-            if(arr[i] > max)
-            {
-                max = arr[i];
-                maxdex = i;
-            }
-        }
-    }
-    return maxdex;
-}
-
-int comparefunc(const void *a, const void *b, void *arg)
-{
-    int adex = * (int *) a;
-    int bdex = * (int *) b;
-    int *key = (int *) arg;
-    return key[adex] - key[bdex];
-}
-
-
 int main(int argc, char *argv[])
 {
     if(argc < 4)
@@ -90,11 +64,7 @@ int main(int argc, char *argv[])
         printf("%d, ", occurences[i]);
     printf("\n");*/
 
-    int *index_remap = malloc(words->size*sizeof(*occurences));
-    for(int i = 0; i<words->size; i++)
-        index_remap[i] = i;
-
-    qsort_r(index_remap, words->size, sizeof(*index_remap), &comparefunc, occurences);
+    int *index_remap = util_sortby_remap(occurences, words->size);
     for(int i = 0; i<wordc && i<words->size; i++)
     {
         printf("%s\n", (char *) words->keys->arr[index_remap[words->size - 1 - i]]);
