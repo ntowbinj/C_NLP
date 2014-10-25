@@ -19,9 +19,8 @@ int main()
     int *indeces = tokens_to_indeces(map, words, size);
     for(int i = 0; i<size; i++)
     {
-        printf("%d\t", indeces[i]);
+        printf("%d: %s\n", indeces[i], (char *) map->keys->arr[indeces[i]]);
     }
-    printf("\n");
     rxmap_delete(map);
     free(indeces);
     free(words);

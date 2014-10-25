@@ -169,6 +169,8 @@ struct rxnode *rxnode_get(struct rxnode *n, char *suff)
             i++;
         }
         suff = suff+i;
+        if(i != e->len)
+            return NULL;
         n = e->node;
     }
     return n;

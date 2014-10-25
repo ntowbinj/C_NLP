@@ -1,4 +1,5 @@
 #include "connection.h"
+#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "mysql_help.h"
@@ -24,6 +25,14 @@ MYSQL_RES *mysql_get_part(MYSQL *conn, int part)
 {
     char str[100];
     sprintf(str, SELECT_FORMAT, part);
+    mysql_query(conn, str);
+    return mysql_store_result(conn);
+}
+
+MYSQL_RES *mysql_query_part(MYSQL *conn, int part, char *query)
+{
+    char str[strlen(query) + 5];
+    sprintf(str, query, part);
     mysql_query(conn, str);
     return mysql_store_result(conn);
 }

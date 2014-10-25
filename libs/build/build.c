@@ -30,6 +30,16 @@ rxmap *build_wordlist(char* filename, int maxlen)
     return ret;
 }
 
+int *tokens_to_indeces_filtered(rxmap *map, char **words, int len)
+{
+    int *ret = malloc(len*sizeof(*ret));
+    for(int i = 0; i<len; i++)
+    {
+        ret[i] = rxmap_get(map, words[i]);
+    }
+    return ret;
+}
+
 int *tokens_to_indeces(rxmap *map, char **words, int len)
 {
     int *ret = malloc(len*sizeof(*ret));

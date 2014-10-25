@@ -7,6 +7,25 @@
 
 
 
+char *tok_all_to_lowerc(char *line)
+{
+    char *ret = line;
+    while(*line != '\0')
+    {
+        if(*line >= 'A' && *line <= 'Z')
+        {
+            *line -= SHIFT;
+        }
+        else if(*line < 'a' || *line > 'z')
+        {
+            *line = 'a' + (((int) *line)&15);
+            //*line = 'a';
+        }
+        line++;
+    }
+    return ret;
+}
+        
 char **tok_words(char *line, int *size)
 {
     char *ahead, *behind, endpt;
