@@ -1,7 +1,7 @@
 LIBS=$(wildcard libs/*)
 INCLUDE_PATH=libs/
 CC = gcc
-CFLAGS := -g -std=c99 -Wall -pedantic 
+CFLAGS := -g -std=gnu99 -Wall -pedantic 
 SQLFLAGS := $(shell mysql_config --cflags)
 SQLLIBS := $(shell mysql_config --libs)
 
