@@ -5,6 +5,7 @@
 #include "radix_map/rxmap.h"
 #include "tokenize/tokenize.h"
 #include "build/build.h"
+#include "util/util.h"
 
 #include "config.h"
 
@@ -97,15 +98,16 @@ int main(int argc, char *argv[])
 
     build(subvectors, subs, words, count);
 
+    int wordc = 40;
     for(int i = 0; i<subs->size; i++)
     {
-        int maxdex = maxindex(subvectors[i], words->size);
-        if(maxdex != -1)
-        {
-            char *sub = subs->keys->arr[i];
-            char *word = words->keys->arr[maxdex];
-            printf("subs %s, %d: %s\n", sub, subvectors[i][maxdex], word);
-        }
+        char *sub = subs->keys->arr[i];
+        int *index_remap = util_sortby_remap(subvectors[i], words->size);
+        printf("sub: %s\n", sub);
+        for(int i = 0; i<wordc && i<words->size; i++)
+            printf("%s, ", (char *) words->keys->arr[index_remap[words->size - 1 - i]]);
+        printf("\n\n\n");
+        free(index_remap);
     }
 
 
