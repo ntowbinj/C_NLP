@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <float.h>
 #include "mysql_help/mysql_help.h"
 #include "array_list/arr_list.h"
 #include "radix_map/rxmap.h"
@@ -199,7 +200,17 @@ void multinom_matrix(int *sub_counts, double *sum_totals, int **occurrences_matr
     mysql_apply_per_row(conn, MYSQL_SELECT_TEXT_AND_SUB, row_count, &per_row_multinom_matrix, &arg);
 }
 
-double *log_param_estimation(int len, int class_count, int *occurrences, int smoothing)
+/*double *log_prior_dist(int num_classes, int *class_counts)
+{
+    double *dist = malloc(num_classes*sizeof(*dist));
+    double total = 0;
+    for(int i = 0; i<num_classes; i++)
+    {
+        total += class_counts[i];
+    }
+    double log_denom = log2(total)*/
+
+double *log_param_estimations(int len, int class_count, int *occurrences, float smoothing)
 {
     double *estimations = malloc(len*sizeof(*estimations));
     double total = 0;
@@ -207,7 +218,7 @@ double *log_param_estimation(int len, int class_count, int *occurrences, int smo
     {
         total += occurrences[i];
     }
-    double log_denom = log2(total + smoothing*class_count);
+    double log_denom = log2(total + smoothing*len);
     for(int i = 0; i<len; i++)
     {
         double log_numer = log2(occurrences[i] + smoothing);
@@ -215,6 +226,36 @@ double *log_param_estimation(int len, int class_count, int *occurrences, int smo
     }
     return estimations;
 }
+
+double score_for_class(int len, int *indeces, double *log_params)
+{
+    double score = 0;
+    for(int i = 0; i<len; i++)
+    {
+        if(indeces[i] != -1)
+            score += log_params[indeces[i]];
+    }
+    return score;
+}
+
+int top_score_index(int len, int *indeces, int class_count, double **log_params)
+{
+    int maxdex = 0;
+    double max_score = -DBL_MAX;
+    double score;
+    for(int i = 0; i<class_count; i++)
+    {
+        score = score_for_class(len, indeces, log_params[i]);
+        printf("%d: %f\n", i, score);
+        if(score > max_score)
+        {
+            max_score = score;
+            maxdex = i;
+        }
+    }
+    return maxdex;
+}
+
 
 
 
@@ -259,10 +300,6 @@ int main(int argc, char *argv[])
     int count = atoi(argv[1]);
     rxmap *subs = build_wordlist(PROJECT_ROOT""SUBLIST, MAXLEN);
     rxmap *words = build_wordlist(PROJECT_ROOT""WORDLIST, MAXLEN);
-    for(int i = 0; i<subs->size; i++)
-    {
-        printf("%d: %s\n", i, (char *) subs->keys->arr[i]);
-    }
 
     int sub_counts[subs->size];
     memset(sub_counts, 0, subs->size*sizeof(*sub_counts));
@@ -275,15 +312,33 @@ int main(int argc, char *argv[])
     conn = mysql_start();
 
     multinom_matrix(sub_counts, sum_totals, subvectors, subs, words, count);
+
+    double *log_param_sets[subs->size];
+    for(int i = 0; i<subs->size; i++)
+        log_param_sets[i] = log_param_estimations(words->size, sub_counts[i], subvectors[i], 0.1);
+
+    int size;
+    char *string_lit = "super racist, white people and black african americans affirmative";
+    char string[strlen(string_lit) + 1];
+    strcpy(string, string_lit);
+    char **toks = tok_words(string, &size);
+    int *indeces = tokens_to_indeces_filtered(words, toks, size);
+    int class_index = top_score_index(size, indeces, subs->size, log_param_sets);
+
+    free(toks);
+    free(indeces);
+
+    char *class = subs->keys->arr[class_index];
+    printf("CHOICE: %s\n", class);
+
     for(int i = 0; i<subs->size; i++)
     {
-        printf("sub %d: %d\n", i, sub_counts[i]);
+        printf("%d: %s, %d\n", i, (char *) subs->keys->arr[i], sub_counts[i]);
     }
 
-    int wordc = 50;
+    /*int wordc = 50;
     for(int i = 0; i<subs->size; i++)
     {
-        double *log_estim = log_param_estimation(words->size, sub_counts[i], subvectors[i], 0);
         char *sub = subs->keys->arr[i];
         int *index_remap = util_sortby_remap(subvectors[i], words->size);
         printf("sub: %s\n", sub);
@@ -295,12 +350,14 @@ int main(int argc, char *argv[])
         }
         printf("\n\n\n");
         free(index_remap);
-        free(log_estim);
-    }
+    }*/
 
 
     for(int i = 0; i<subs->size; i++)
+    {
+        free(log_param_sets[i]);
         free(subvectors[i]);
+    }
 
     rxmap_delete(subs);
     rxmap_delete(words);
