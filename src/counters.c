@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "mysql_help/mysql_help.h"
 #include "array_list/arr_list.h"
 #include "radix_map/rxmap.h"
@@ -15,12 +16,14 @@ struct bernoulli_arg_flat
 {
     int *zero_slate;
     int *present_totals;
+    double *sum_total_ptr;
     rxmap *words;
 };
 
 struct multinom_arg_flat
 {
     int *occurrences;
+    double *sum_total_ptr;
     rxmap *words;
 };
 
@@ -29,6 +32,7 @@ struct bernoulli_arg_matrix
     int *zero_slate;
     int **present_totals_matrix;
     int *sub_counts;
+    double *sum_totals;
     rxmap *subs;
     rxmap *words;
 };
@@ -37,6 +41,7 @@ struct multinom_arg_matrix
 {
     int **occurrences_matrix;
     int *sub_counts;
+    double *sum_totals;
     rxmap *subs;
     rxmap *words;
 };
@@ -55,6 +60,7 @@ static inline void per_row_multinom_flat(MYSQL_ROW row, void *arguments)
         if(indeces[i] != -1)
         {
             arg.occurrences[indeces[i]]++;
+            *(arg.sum_total_ptr) += 1;
         }
     }
     free(toks);
@@ -86,6 +92,7 @@ static inline void per_row_bernoulli_flat(MYSQL_ROW row, void *arguments)
             if(arg.zero_slate[indeces[i]])
             {
                 arg.present_totals[indeces[i]]++;
+                *(arg.sum_total_ptr) += 1;
                 arg.zero_slate[indeces[i]] = 0;
             }
         }
@@ -105,6 +112,7 @@ static inline void per_row_multinom_matrix(MYSQL_ROW row, void *arguments)
         struct multinom_arg_flat flat_arg = 
         {
             .occurrences = arg.occurrences_matrix[subdex],
+            .sum_total_ptr = arg.sum_totals + subdex,
             .words = arg.words
         };
         per_row_multinom_flat(row, &flat_arg);
@@ -123,6 +131,7 @@ static inline void per_row_bernoulli_matrix(MYSQL_ROW row, void *arguments)
         {
             .zero_slate = arg.zero_slate,
             .present_totals = arg.present_totals_matrix[subdex],
+            .sum_total_ptr = arg.sum_totals + subdex,
             .words = arg.words
         };
         per_row_bernoulli_flat(row, &flat_arg);
@@ -136,9 +145,9 @@ static inline void per_row_bernoulli_matrix(MYSQL_ROW row, void *arguments)
 // this function parses count rows, and afterward
 // occurrences[i] will have the total number of times
 // word i appeared.
-void multinom_flat(int *occurrences, rxmap *words, int row_count)
+void multinom_flat(double *sum_total_ptr, int *occurrences, rxmap *words, int row_count)
 {
-    struct multinom_arg_flat arg = {.occurrences = occurrences, .words = words};
+    struct multinom_arg_flat arg = {.occurrences = occurrences, .sum_total_ptr = sum_total_ptr, .words = words};
     mysql_apply_per_row(conn, MYSQL_SELECT_TEXT, row_count, &per_row_multinom_flat, &arg);
 }
 
@@ -147,7 +156,7 @@ void multinom_flat(int *occurrences, rxmap *words, int row_count)
 // this function parses count rows, and afterward
 // present_total[i] will have the number of rows
 // in which word i was present
-void bernoulli_flat(int *present_totals, rxmap *words, int row_count)
+void bernoulli_flat(double *sum_total_ptr, int *present_totals, rxmap *words, int row_count)
 {
     int zero_slate[words->size];
     memset(zero_slate, 0, sizeof(*zero_slate)*words->size);
@@ -155,12 +164,13 @@ void bernoulli_flat(int *present_totals, rxmap *words, int row_count)
     {
         .zero_slate = zero_slate,
         .present_totals = present_totals,
+        .sum_total_ptr = sum_total_ptr,
         .words = words
     };
     mysql_apply_per_row(conn, MYSQL_SELECT_TEXT, row_count, &per_row_bernoulli_flat, &arg);
 }
 
-void bernoulli_matrix(int *sub_counts, int **present_totals_matrix, rxmap *subs, rxmap *words, int row_count)
+void bernoulli_matrix(int *sub_counts, double *sum_totals, int **present_totals_matrix, rxmap *subs, rxmap *words, int row_count)
 {
     int zero_slate[words->size];
     memset(zero_slate, 0, sizeof(*zero_slate)*words->size);
@@ -169,22 +179,41 @@ void bernoulli_matrix(int *sub_counts, int **present_totals_matrix, rxmap *subs,
         .zero_slate = zero_slate,
         .sub_counts = sub_counts,
         .present_totals_matrix = present_totals_matrix,
+        .sum_totals = sum_totals,
         .words = words,
         .subs = subs
     };
     mysql_apply_per_row(conn, MYSQL_SELECT_TEXT_AND_SUB, row_count, &per_row_bernoulli_matrix, &arg);
 }
 
-void multinom_matrix(int *sub_counts, int **occurrences_matrix, rxmap *subs, rxmap *words, int row_count)
+void multinom_matrix(int *sub_counts, double *sum_totals, int **occurrences_matrix, rxmap *subs, rxmap *words, int row_count)
 {
     struct multinom_arg_matrix arg = 
     {
         .occurrences_matrix = occurrences_matrix, 
+        .sum_totals = sum_totals,
         .sub_counts = sub_counts,
         .words = words,
         .subs = subs
     };
     mysql_apply_per_row(conn, MYSQL_SELECT_TEXT_AND_SUB, row_count, &per_row_multinom_matrix, &arg);
+}
+
+double *log_param_estimation(int len, int class_count, int *occurrences, int smoothing)
+{
+    double *estimations = malloc(len*sizeof(*estimations));
+    double total = 0;
+    for(int i = 0; i<len; i++)
+    {
+        total += occurrences[i];
+    }
+    double log_denom = log2(total + smoothing*class_count);
+    for(int i = 0; i<len; i++)
+    {
+        double log_numer = log2(occurrences[i] + smoothing);
+        estimations[i] = log_numer - log_denom;
+    }
+    return estimations;
 }
 
 
@@ -237,13 +266,15 @@ int main(int argc, char *argv[])
 
     int sub_counts[subs->size];
     memset(sub_counts, 0, subs->size*sizeof(*sub_counts));
+    double sum_totals[subs->size];
+    memset(sum_totals, 0, subs->size*sizeof(*sum_totals));
     int *subvectors[subs->size];
     for(int i = 0; i<subs->size; i++)
         subvectors[i] = calloc(words->size, sizeof(int));
 
     conn = mysql_start();
 
-    multinom_matrix(sub_counts, subvectors, subs, words, count);
+    multinom_matrix(sub_counts, sum_totals, subvectors, subs, words, count);
     for(int i = 0; i<subs->size; i++)
     {
         printf("sub %d: %d\n", i, sub_counts[i]);
@@ -252,14 +283,21 @@ int main(int argc, char *argv[])
     int wordc = 50;
     for(int i = 0; i<subs->size; i++)
     {
+        double *log_estim = log_param_estimation(words->size, sub_counts[i], subvectors[i], 0);
         char *sub = subs->keys->arr[i];
         int *index_remap = util_sortby_remap(subvectors[i], words->size);
         printf("sub: %s\n", sub);
+        printf("words counted: %ld\n", (long) sum_totals[i]);
         for(int i = 0; i<wordc && i<words->size; i++)
+        {
+            printf("%f, ", log_estim[index_remap[words->size - 1 - i]]);
             printf("%s, ", (char *) words->keys->arr[index_remap[words->size - 1 - i]]);
+        }
         printf("\n\n\n");
         free(index_remap);
+        free(log_estim);
     }
+
 
     for(int i = 0; i<subs->size; i++)
         free(subvectors[i]);
