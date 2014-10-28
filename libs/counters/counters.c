@@ -5,50 +5,18 @@
 #include <math.h>
 #include <float.h>
 #include "mysql_help/mysql_help.h"
-#include "array_list/arr_list.h"
 #include "radix_map/rxmap.h"
 #include "tokenize/tokenize.h"
 #include "build/build.h"
 #include "util/util.h"
+#include "counters.h"
 
-#include "config.h"
+#define MAXLEN 50
 
-struct bernoulli_arg_flat
-{
-    int *zero_slate;
-    int *present_totals;
-    double *sum_total_ptr;
-    rxmap *words;
-};
-
-struct multinom_arg_flat
-{
-    int *occurrences;
-    double *sum_total_ptr;
-    rxmap *words;
-};
-
-struct bernoulli_arg_matrix
-{
-    int *zero_slate;
-    int **present_totals_matrix;
-    int *sub_counts;
-    double *sum_totals;
-    rxmap *subs;
-    rxmap *words;
-};
-
-struct multinom_arg_matrix
-{
-    int **occurrences_matrix;
-    int *sub_counts;
-    double *sum_totals;
-    rxmap *subs;
-    rxmap *words;
-};
-
+//#include "config.h"
 
 MYSQL *conn;
+
 
 static inline void per_row_multinom_flat(MYSQL_ROW row, void *arguments)
 {
@@ -200,169 +168,143 @@ void multinom_matrix(int *sub_counts, double *sum_totals, int **occurrences_matr
     mysql_apply_per_row(conn, MYSQL_SELECT_TEXT_AND_SUB, row_count, &per_row_multinom_matrix, &arg);
 }
 
-/*double *log_prior_dist(int num_classes, int *class_counts)
+void init_raw_resources_arrays(struct raw_resources *resptr, int num_classes, int num_tokens)
 {
-    double *dist = malloc(num_classes*sizeof(*dist));
-    double total = 0;
+    resptr->class_counts = calloc(num_classes, sizeof(*resptr->class_counts));
+    resptr->sum_totals = calloc(num_classes, sizeof(*resptr->sum_totals));
+    resptr->occurrences_matrix = malloc(num_classes*sizeof(*resptr->occurrences_matrix));
     for(int i = 0; i<num_classes; i++)
-    {
-        total += class_counts[i];
-    }
-    double log_denom = log2(total)*/
-
-double *log_param_estimations(int len, int class_count, int *occurrences, float smoothing)
-{
-    double *estimations = malloc(len*sizeof(*estimations));
-    double total = 0;
-    for(int i = 0; i<len; i++)
-    {
-        total += occurrences[i];
-    }
-    double log_denom = log2(total + smoothing*len);
-    for(int i = 0; i<len; i++)
-    {
-        double log_numer = log2(occurrences[i] + smoothing);
-        estimations[i] = log_numer - log_denom;
-    }
-    return estimations;
+        resptr->occurrences_matrix[i] = calloc(num_tokens, sizeof(**resptr->occurrences_matrix));
 }
 
-double score_for_class(int len, int *indeces, double *log_params)
+struct raw_resources build_raw_resources(struct build_params params)
 {
-    double score = 0;
-    for(int i = 0; i<len; i++)
-    {
-        if(indeces[i] != -1)
-            score += log_params[indeces[i]];
-    }
-    return score;
-}
+    rxmap *classes = build_wordlist(params.classes_filepath, MAXLEN);
+    rxmap *tokens = build_wordlist(params.tokens_filepath, MAXLEN);
 
-int top_score_index(int len, int *indeces, int class_count, double **log_params)
-{
-    int maxdex = 0;
-    double max_score = -DBL_MAX;
-    double score;
-    for(int i = 0; i<class_count; i++)
-    {
-        score = score_for_class(len, indeces, log_params[i]);
-        printf("%d: %f\n", i, score);
-        if(score > max_score)
-        {
-            max_score = score;
-            maxdex = i;
-        }
-    }
-    return maxdex;
-}
-
-
-
-
-int main(int argc, char *argv[])
-{
-    /*if(argc < 4)
-    {
-        fprintf(stderr, "args: wordlist path, partition count, word count\n");
-        exit(-1);
-    }
-
-    int rowc = atoi(argv[2]);
-    int wordc = atoi(argv[3]);
-    printf("path: %s\n", argv[1]);
-    rxmap *words = build_wordlist(argv[1], MAXLEN);
-    printf("SIZE: %d\n", words->size);
-    int *occurrences = calloc(words->size, sizeof(*occurrences));
-
+    struct raw_resources ret;
+    init_raw_resources_arrays(&ret, classes->size, tokens->size);
     conn = mysql_start();
+    ret.classes = classes;
+    ret.tokens = tokens;
 
-    //multinom_flat(occurrences, words, rowc);
-    bernoulli_flat(occurrences, words, rowc);
-
-    int *index_remap = util_sortby_remap(occurrences, words->size);
-    for(int i = 0; i<wordc && i<words->size; i++)
-    {
-        printf("%s\n", (char *) words->keys->arr[index_remap[words->size - 1 - i]]);
-    }
-
-    rxmap_delete(words);
-    free(occurrences);
-    free(index_remap);
-
-    mysql_finish(conn);*/
-
-    if(argc < 2)
-    {
-        fprintf(stderr, "wrong args.\ngive number.\n");
-        exit(1);
-    }
-
-    int count = atoi(argv[1]);
-    rxmap *subs = build_wordlist(PROJECT_ROOT""SUBLIST, MAXLEN);
-    rxmap *words = build_wordlist(PROJECT_ROOT""WORDLIST, MAXLEN);
-
-    int sub_counts[subs->size];
-    memset(sub_counts, 0, subs->size*sizeof(*sub_counts));
-    double sum_totals[subs->size];
-    memset(sum_totals, 0, subs->size*sizeof(*sum_totals));
-    int *subvectors[subs->size];
-    for(int i = 0; i<subs->size; i++)
-        subvectors[i] = calloc(words->size, sizeof(int));
-
-    conn = mysql_start();
-
-    multinom_matrix(sub_counts, sum_totals, subvectors, subs, words, count);
-
-    double *log_param_sets[subs->size];
-    for(int i = 0; i<subs->size; i++)
-        log_param_sets[i] = log_param_estimations(words->size, sub_counts[i], subvectors[i], 0.1);
-
-    int size;
-    char *string_lit = "super racist, white people and black african americans affirmative";
-    char string[strlen(string_lit) + 1];
-    strcpy(string, string_lit);
-    char **toks = tok_words(string, &size);
-    int *indeces = tokens_to_indeces_filtered(words, toks, size);
-    int class_index = top_score_index(size, indeces, subs->size, log_param_sets);
-
-    free(toks);
-    free(indeces);
-
-    char *class = subs->keys->arr[class_index];
-    printf("CHOICE: %s\n", class);
-
-    for(int i = 0; i<subs->size; i++)
-    {
-        printf("%d: %s, %d\n", i, (char *) subs->keys->arr[i], sub_counts[i]);
-    }
-
-    /*int wordc = 50;
-    for(int i = 0; i<subs->size; i++)
-    {
-        char *sub = subs->keys->arr[i];
-        int *index_remap = util_sortby_remap(subvectors[i], words->size);
-        printf("sub: %s\n", sub);
-        printf("words counted: %ld\n", (long) sum_totals[i]);
-        for(int i = 0; i<wordc && i<words->size; i++)
-        {
-            printf("%f, ", log_estim[index_remap[words->size - 1 - i]]);
-            printf("%s, ", (char *) words->keys->arr[index_remap[words->size - 1 - i]]);
-        }
-        printf("\n\n\n");
-        free(index_remap);
-    }*/
-
-
-    for(int i = 0; i<subs->size; i++)
-    {
-        free(log_param_sets[i]);
-        free(subvectors[i]);
-    }
-
-    rxmap_delete(subs);
-    rxmap_delete(words);
+    multinom_matrix(
+            ret.class_counts,
+            ret.sum_totals,
+            ret.occurrences_matrix,
+            ret.classes,
+            ret.tokens,
+            params.training_size);
 
     mysql_finish(conn);
-
+    return ret;
 }
+
+struct raw_resources read_raw_resources(char *file_path)
+{
+    struct raw_resources res;
+    FILE *fp = fopen(file_path, "r");
+    rxmap *classes, *tokens;
+    classes = rxmap_new();
+    tokens = rxmap_new();
+    int num_classes, num_tokens;
+
+    // number of classes
+    fread(&num_classes, sizeof(res.classes->size), 1, fp);
+
+    // number of tokens
+    fread(&num_tokens, sizeof(res.tokens->size), 1, fp);
+
+    init_raw_resources_arrays(&res, num_classes, num_tokens);
+
+    // classes
+    build_load_n_words(fp, num_classes, classes, MAXLEN);
+
+    // tokens
+    build_load_n_words(fp, num_tokens, tokens, MAXLEN);
+
+    // matrix
+    for(int i = 0; i<num_classes; i++){
+        for(int j = 0; j<num_tokens; j++)
+        {
+            fread(&res.occurrences_matrix[i][j], sizeof(**res.occurrences_matrix), 1, fp);
+        }
+    }
+
+    // class_counts
+    for(int i = 0; i<num_classes; i++)
+    {
+        fread(&res.class_counts[i], sizeof(*res.class_counts), 1, fp);
+    }
+
+    // sum_totals
+    for(int i = 0; i<num_classes; i++)
+    {
+        fread(&res.sum_totals[i], sizeof(*res.sum_totals), 1, fp);
+    }
+    fclose(fp);
+    //printf("%d\n", classes->size);
+    //printf("%d\n", tokens->size);
+    res.classes = classes;
+    res.tokens = tokens;
+    return res;
+}
+
+void store_raw_resources(struct raw_resources res, char* file_path)
+{
+    FILE *fp = fopen(file_path, "w");
+    // number of classes
+    fwrite(&res.classes->size, sizeof(res.classes->size), 1, fp);
+    // number of tokens
+    fwrite(&res.tokens->size, sizeof(res.tokens->size), 1, fp);
+
+    // classes
+    for(int i = 0; i<res.classes->size; i++)
+    {
+        fprintf(fp, "%s\n", (char *) res.classes->keys->arr[i]);
+    }
+
+    // tokens
+    for(int i = 0; i<res.tokens->size; i++)
+    {
+        fprintf(fp, "%s\n", (char *) res.tokens->keys->arr[i]);
+    }
+
+    // matrix
+    for(int i = 0; i<res.classes->size; i++)
+    {
+        for(int j = 0; j<res.tokens->size; j++)
+        {
+            fwrite(&res.occurrences_matrix[i][j], sizeof(**res.occurrences_matrix), 1, fp);
+        }
+    }
+
+    // class_counts
+    for(int i = 0; i<res.classes->size; i++)
+    {
+        fwrite(&res.class_counts[i], sizeof(*res.class_counts), 1, fp);
+    }
+
+    // sum_totals
+    for(int i = 0; i<res.classes->size; i++)
+    {
+        fwrite(&res.sum_totals[i], sizeof(*res.sum_totals), 1, fp);
+    }
+    fclose(fp);
+}
+
+void free_raw_resources(struct raw_resources resources)
+{
+    for(int i = 0; i<resources.classes->size; i++)
+    {
+        free(resources.occurrences_matrix[i]);
+    }
+    free(resources.occurrences_matrix);
+    free(resources.class_counts);
+    free(resources.sum_totals);
+    rxmap_delete(resources.classes);
+    rxmap_delete(resources.tokens);
+}
+
+
 

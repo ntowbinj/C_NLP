@@ -30,6 +30,24 @@ rxmap *build_wordlist(char* filename, int maxlen)
     return ret;
 }
 
+void build_load_n_words(FILE *fp, int count, rxmap *dest, int maxlen)
+{
+    char line[maxlen];
+    for(int i = 0; i<count; i++)
+    {
+        fgets(line, maxlen, fp);
+        int pos = strlen(line) -1;
+        if(line[pos] == '\n')
+        {
+            line[pos] = '\0';
+        }
+        int size; // assumed to be exactly 1, ignore
+        char **words = tok_words(line, &size);
+        rxmap_addonce(dest, words[0]);
+        free(words);
+    }
+}
+
 int *tokens_to_indeces_filtered(rxmap *map, char **words, int len)
 {
     int *ret = malloc(len*sizeof(*ret));
