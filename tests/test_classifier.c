@@ -11,7 +11,7 @@
 
 int main(int argc, char *argv[])
 {
-    struct raw_resources res = read_raw_resources("/home/n/programming/cstuff/analysis/data/try2.bays");
+    struct raw_resources res = read_raw_resources("/home/n/programming/cstuff/analysis/data/try200subs.bays");
 
 
     double *log_param_sets[res.classes->size];
@@ -20,7 +20,8 @@ int main(int argc, char *argv[])
     free_raw_resources_arrays(res);
 
     int size;
-    char *string_lit = "what's the name of that in new mexico, albequerqe, meth, drugs, dealer, chemistry";
+    char *string_lit = "i also like that show about the dead walking around groups";
+    //char *string_lit = "what's the name of that in new mexico, albequerqe, meth, drugs, dealer, chemistry";
     char string[strlen(string_lit) + 1];
     strcpy(string, string_lit);
     char **toks = tok_words(string, &size);

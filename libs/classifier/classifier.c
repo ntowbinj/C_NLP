@@ -13,12 +13,12 @@
 double *log_param_estimations(int len, int class_count, int *occurrences, float smoothing)
 {
     double *estimations = malloc(len*sizeof(*estimations));
-    double total = 0;
+    long double total = 0;
     for(int i = 0; i<len; i++)
     {
         total += occurrences[i];
     }
-    double log_denom = log2(total + smoothing*len);
+    double log_denom = log2l(total + smoothing*len);
     for(int i = 0; i<len; i++)
     {
         double log_numer = log2(occurrences[i] + smoothing);
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     };
 
     //struct raw_resources res_built = build_raw_resources(params);
-    //store_raw_resources(res_built, "/home/n/programming/cstuff/analysis/data/try.bays");
+    store_raw_resources(res_built, "/home/n/programming/cstuff/analysis/data/try.bays");
     struct raw_resources res = read_raw_resources("/home/n/programming/cstuff/analysis/data/try.bays");
 
 

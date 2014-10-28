@@ -10,7 +10,7 @@ all: tests mains clean
 mains: src/*.[ch]
 	for main in $(wildcard src/*.c); do\
 	    exec=`echo $$main | cut -d"." -f1`;\
-	    $(CC) $(CFLAGS) $(SQLFLAGS) $$main $(wildcard libraries/*) -I$(INCLUDE_PATH) $(SQLLIBS) -ljansson -lm -o $$exec.out; \
+	    $(CC) $(CFLAGS) $(SQLFLAGS) $$main $(wildcard libraries/*) -I$(INCLUDE_PATH) $(SQLLIBS) -lfcgi -lpthread -lm -o $$exec.out; \
 	done;
 
 tests: libraries tests/*.c
