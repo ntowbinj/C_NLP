@@ -41,13 +41,34 @@ void mysql_apply_per_row(
         char *query, 
         int row_count, 
         void (*do_per_row) (MYSQL_ROW, void *), 
-        void *arg
-        )
+        void *arg)
+{
+    mysql_apply_per_row_from(conn, query, row_count, do_per_row, arg, 0);
+}
+
+void mysql_apply_per_partition(
+        MYSQL *conn, 
+        char *query, 
+        int part_count, 
+        void (*do_per_row) (MYSQL_ROW, void *), 
+        void *arg)
+{
+    mysql_apply_per_partition_from(conn, query, part_count, do_per_row, arg, 0);
+}
+
+void mysql_apply_per_row_from(
+        MYSQL *conn,
+        char *query,
+        int row_count,
+        void (*do_per_row) (MYSQL_ROW, void *),
+        void *arg,
+        int start_part)
 {
     MYSQL_ROW row;
     MYSQL_RES *result;
     int part, rownum;
-    part = rownum = 0;
+    part = start_part;
+    rownum = 0;
     while(part<NUMPARTS && rownum<row_count)
     {
         result = mysql_query_part(conn, part, query);
@@ -60,3 +81,27 @@ void mysql_apply_per_row(
         mysql_free_result(result);
     }
 }
+
+void mysql_apply_per_partition_from(
+        MYSQL *conn,
+        char *query,
+        int part_count,
+        void (*do_per_row) (MYSQL_ROW, void *),
+        void *arg,
+        int start_part)
+{
+    MYSQL_ROW row;
+    MYSQL_RES *result;
+    int part = start_part;
+    while(part<NUMPARTS && part<part_count)
+    {
+        result = mysql_query_part(conn, part, query);
+        part++;
+        while((row = mysql_fetch_row(result)))
+        {
+            (*do_per_row)(row, arg);
+        }
+        mysql_free_result(result);
+    }
+}
+
