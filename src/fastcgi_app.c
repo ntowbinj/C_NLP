@@ -25,6 +25,7 @@ int continue_accepting = 1;
 double **log_param_sets;
 struct raw_resources res;
 void free_stuff();
+void undersc_to_space(char *content, long len);
 
 void finish_nongracefully(int sig)
 {
@@ -67,6 +68,7 @@ static void *func(void *arg)
             char content[content_length+1];
             content[content_length] = 0;
             FCGX_GetStr(content, content_length, request.in);
+            undersc_to_space(content, content_length);
             int size;
             toks = tok_words(content, &size);
             indeces = tokens_to_indeces_filtered(res.tokens, toks, size);
@@ -88,6 +90,18 @@ static void *func(void *arg)
 
     return NULL;
 }
+
+void undersc_to_space(char *content, long len)
+{
+    for(int i = 0; i<len; i++)
+    {
+        if(content[i] == '_')
+        {
+            content[i] = ' ';
+        }
+    }
+}
+
 
 void classifier_init()
 {
