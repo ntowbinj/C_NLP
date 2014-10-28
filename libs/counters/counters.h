@@ -61,7 +61,7 @@ void bernoulli_matrix(int *sub_counts, double *sum_totals, int **present_totals_
 void multinom_matrix(int *sub_counts, double *sum_totals, int **occurrences_matrix, rxmap *subs, rxmap *words, int row_count);
 
 
-void free_raw_resources(struct raw_resources resources);
+void free_raw_resources_arrays(struct raw_resources resources);
 
 void store_raw_resources(struct raw_resources res, char* file_path);
 

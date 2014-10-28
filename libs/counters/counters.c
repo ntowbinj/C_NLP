@@ -282,7 +282,7 @@ void store_raw_resources(struct raw_resources res, char* file_path)
     fclose(fp);
 }
 
-void free_raw_resources(struct raw_resources resources)
+void free_raw_resources_arrays(struct raw_resources resources)
 {
     for(int i = 0; i<resources.classes->size; i++)
     {
@@ -291,8 +291,6 @@ void free_raw_resources(struct raw_resources resources)
     free(resources.occurrences_matrix);
     free(resources.class_counts);
     free(resources.sum_totals);
-    rxmap_delete(resources.classes);
-    rxmap_delete(resources.tokens);
 }
 
 

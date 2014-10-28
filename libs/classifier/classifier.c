@@ -55,6 +55,10 @@ int top_score_index(int len, int *indeces, int class_count, double **log_params)
     return maxdex;
 }
 
+/*struct classifier classifier_from_raw_resources(struct raw_resources res)
+{*/
+
+
 /*
 int main(int argc, char *argv[])
 {
