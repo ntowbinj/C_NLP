@@ -1,0 +1,47 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <float.h>
+
+#include "radix_map/rxmap.h"
+#include "tokenize/tokenize.h"
+#include "build/build.h"
+#include "util/util.h"
+#include "counters/counters.h"
+#include "classifier/classifier.h"
+
+int main(int argc, char *argv[])
+{
+    struct raw_resources res = read_raw_resources("/home/n/programming/cstuff/analysis/data/try.bays");
+
+
+    double *log_param_sets[res.classes->size];
+    for(int i = 0; i<res.classes->size; i++)
+        log_param_sets[i] = log_param_estimations(res.tokens->size, res.class_counts[i], res.occurrences_matrix[i], 0.1);
+
+    int size;
+    //char *string_lit = "politics and government, voters and the public eye";
+    char *string_lit = "what's the name of that in new mexico, albequerqe, meth, drugs, dealer, chemistry";
+    char string[strlen(string_lit) + 1];
+    strcpy(string, string_lit);
+    char **toks = tok_words(string, &size);
+    int *indeces = tokens_to_indeces_filtered(res.tokens, toks, size);
+    int class_index = top_score_index(size, indeces, res.classes->size, log_param_sets);
+
+    free(toks);
+    free(indeces);
+
+    char *class = res.classes->keys->arr[class_index];
+    printf("CHOICE: %s\n", class);
+
+    for(int i = 0; i<res.classes->size; i++)
+    {
+        free(log_param_sets[i]);
+    }
+    free_raw_resources(res);
+
+
+}
+
+

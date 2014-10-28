@@ -224,24 +224,19 @@ struct raw_resources read_raw_resources(char *file_path)
     build_load_n_words(fp, num_tokens, tokens, MAXLEN);
 
     // matrix
-    for(int i = 0; i<num_classes; i++){
+    for(int i = 0; i<num_classes; i++)
+    {
         for(int j = 0; j<num_tokens; j++)
-        {
             fread(&res.occurrences_matrix[i][j], sizeof(**res.occurrences_matrix), 1, fp);
-        }
     }
 
     // class_counts
     for(int i = 0; i<num_classes; i++)
-    {
         fread(&res.class_counts[i], sizeof(*res.class_counts), 1, fp);
-    }
 
     // sum_totals
     for(int i = 0; i<num_classes; i++)
-    {
         fread(&res.sum_totals[i], sizeof(*res.sum_totals), 1, fp);
-    }
     fclose(fp);
     //printf("%d\n", classes->size);
     //printf("%d\n", tokens->size);
@@ -260,23 +255,17 @@ void store_raw_resources(struct raw_resources res, char* file_path)
 
     // classes
     for(int i = 0; i<res.classes->size; i++)
-    {
         fprintf(fp, "%s\n", (char *) res.classes->keys->arr[i]);
-    }
 
     // tokens
     for(int i = 0; i<res.tokens->size; i++)
-    {
         fprintf(fp, "%s\n", (char *) res.tokens->keys->arr[i]);
-    }
 
     // matrix
     for(int i = 0; i<res.classes->size; i++)
     {
         for(int j = 0; j<res.tokens->size; j++)
-        {
             fwrite(&res.occurrences_matrix[i][j], sizeof(**res.occurrences_matrix), 1, fp);
-        }
     }
 
     // class_counts

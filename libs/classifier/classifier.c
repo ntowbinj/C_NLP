@@ -8,9 +8,7 @@
 #include "tokenize/tokenize.h"
 #include "build/build.h"
 #include "util/util.h"
-#include "counters/counters.h"
 
-#include "config.h"
 
 double *log_param_estimations(int len, int class_count, int *occurrences, float smoothing)
 {
@@ -57,6 +55,7 @@ int top_score_index(int len, int *indeces, int class_count, double **log_params)
     return maxdex;
 }
 
+/*
 int main(int argc, char *argv[])
 {
     if(argc < 2)
@@ -104,3 +103,4 @@ int main(int argc, char *argv[])
 
 
 }
+*/
