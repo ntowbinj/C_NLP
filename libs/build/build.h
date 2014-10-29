@@ -9,4 +9,6 @@ int *tokens_to_indeces(rxmap *map, char **words, int len);
 
 int *tokens_to_indeces_filtered(rxmap *map, char **words, int len);
 
+int *tokens_to_indeces_length_limited(rxmap *map, char **words, int size, int maxlen);
+
 #endif

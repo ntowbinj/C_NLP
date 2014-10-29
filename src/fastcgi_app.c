@@ -16,13 +16,15 @@
 #include "counters/counters.h"
 #include "classifier/classifier.h"
 
+#include "localconfig.h"
+
 
 
 #define NUM_THREADS 20
 
 int continue_accepting = 1;
 
-double **log_param_sets;
+double **param_vecs;
 struct raw_resources res;
 void free_stuff();
 void undersc_to_space(char *content, long len);
@@ -73,7 +75,7 @@ static void *func(void *arg)
             toks = tok_words(content, &size);
             indeces = tokens_to_indeces_filtered(res.tokens, toks, size);
             free_them = 1;
-            int class_index = top_score_index(size, indeces, res.classes->size, log_param_sets);
+            int class_index = top_score_index(size, indeces, res.classes->size, param_vecs);
             response = res.classes->keys->arr[class_index];
         }
 
@@ -105,10 +107,10 @@ void undersc_to_space(char *content, long len)
 
 void classifier_init()
 {
-    res = read_raw_resources("/home/n/programming/cstuff/bayes-server/data/try200subs.bays");
-    log_param_sets = malloc(res.classes->size*sizeof(*log_param_sets));
+    res = read_raw_resources(RES_FILE);
+    param_vecs = malloc(res.classes->size*sizeof(*param_vecs));
     for(int i = 0; i<res.classes->size; i++)
-        log_param_sets[i] = log_param_estimations(res.tokens->size, res.class_counts[i], res.occurrences_matrix[i], 0.1);
+        param_vecs[i] = default_estimator(res.tokens->size, res.class_counts[i], res.occurrences_matrix[i], 0.4);
     free_raw_resources_arrays(res);
 }
 
@@ -116,7 +118,7 @@ void free_stuff()
 {
     for(int i = 0; i<res.classes->size; i++)
     {
-        free(log_param_sets[i]);
+        free(param_vecs[i]);
     }
     rxmap_delete(res.classes);
     rxmap_delete(res.tokens);

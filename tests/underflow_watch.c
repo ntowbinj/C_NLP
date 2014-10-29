@@ -11,9 +11,9 @@
 
 int main(int argc, char *argv[])
 {
-    if(argc < 3)
+    if(argc < 2)
     {
-        fprintf(stderr, "args: resources file, input string\n\n");
+        fprintf(stderr, "args: resources file\n\n");
         exit(1);
     }
 
@@ -29,20 +29,14 @@ int main(int argc, char *argv[])
 
     free_raw_resources_arrays(res);
 
-    int size;
-    char *string_lit = argv[2];
-    char string[strlen(string_lit) + 1];
-    strcpy(string, string_lit);
-    char **toks = tok_words(string, &size);
-    int *indeces = tokens_to_indeces_filtered(res.tokens, toks, size);
-    int class_index = top_score_index(size, indeces, res.classes->size, param_vecs);
-
-    free(toks);
-    free(indeces);
-
-    char *class = res.classes->keys->arr[class_index];
-    printf("CHOICE: %s\n", class);
-
+    for(int i = 0; i<10; i++)
+    {
+        printf("\n%s\n\n", (char *) res.classes->keys->arr[i]);
+        for(int j=  9000; j<9010; j++)
+        {
+            printf("%s: %f\n", (char *) res.tokens->keys->arr[j], param_vecs[i][j]);
+        }
+    }
 
     free_param_vecs(res.classes->size, param_vecs);
     rxmap_delete(res.classes);
@@ -50,4 +44,5 @@ int main(int argc, char *argv[])
 
 
 }
+
 

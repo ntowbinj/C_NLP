@@ -48,22 +48,35 @@ void build_load_n_tokens(FILE *fp, int count, rxmap *dest, int maxlen)
     }
 }
 
-int *tokens_to_indeces_filtered(rxmap *map, char **words, int len)
+int *tokens_to_indeces_filtered(rxmap *map, char **words, int size)
 {
-    int *ret = malloc(len*sizeof(*ret));
-    for(int i = 0; i<len; i++)
+    int *ret = malloc(size*sizeof(*ret));
+    for(int i = 0; i<size; i++)
     {
         ret[i] = rxmap_get(map, words[i]);
     }
     return ret;
 }
 
-int *tokens_to_indeces(rxmap *map, char **words, int len)
+int *tokens_to_indeces(rxmap *map, char **words, int size)
 {
-    int *ret = malloc(len*sizeof(*ret));
-    for(int i = 0; i<len; i++)
+    int *ret = malloc(size*sizeof(*ret));
+    for(int i = 0; i<size; i++)
     {
         ret[i] = rxmap_addonce(map, words[i]);
+    }
+    return ret;
+}
+
+int *tokens_to_indeces_length_limited(rxmap *map, char **words, int size, int maxlen)
+{
+    int *ret = malloc(size*sizeof(*ret));
+    for(int i = 0; i<size; i++)
+    {
+        if(strlen(words[i]) < maxlen)
+            ret[i] = rxmap_addonce(map, words[i]);
+        else
+            ret[i] = -1;
     }
     return ret;
 }
