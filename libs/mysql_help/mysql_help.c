@@ -29,8 +29,8 @@ MYSQL_RES *mysql_get_part(MYSQL *conn, int part)
 
 MYSQL_RES *mysql_query_part(MYSQL *conn, int part, char *query)
 {
-    // in case the partition number is 5 digits
-    char str[strlen(query) + 5];
+    // in case the partition number is 10 digits (never)
+    char str[strlen(query) + 10];
     sprintf(str, query, part);
     mysql_query(conn, str);
     return mysql_store_result(conn);
@@ -40,27 +40,27 @@ void mysql_apply_per_row(
         MYSQL *conn, 
         char *query, 
         int row_count, 
-        void (*do_per_row) (MYSQL_ROW, void *), 
+        mysql_per_row_func per_row,
         void *arg)
 {
-    mysql_apply_per_row_from(conn, query, row_count, do_per_row, arg, 0);
+    mysql_apply_per_row_from(conn, query, row_count, per_row, arg, 0);
 }
 
 void mysql_apply_per_partition(
         MYSQL *conn, 
         char *query, 
         int part_count, 
-        void (*do_per_row) (MYSQL_ROW, void *), 
+        mysql_per_row_func per_row,
         void *arg)
 {
-    mysql_apply_per_partition_from(conn, query, part_count, do_per_row, arg, 0);
+    mysql_apply_per_partition_from(conn, query, part_count, per_row, arg, 0);
 }
 
 void mysql_apply_per_row_from(
         MYSQL *conn,
         char *query,
         int row_count,
-        void (*do_per_row) (MYSQL_ROW, void *),
+        mysql_per_row_func per_row,
         void *arg,
         int start_part)
 {
@@ -75,7 +75,7 @@ void mysql_apply_per_row_from(
         part++;
         while((row = mysql_fetch_row(result)) && rownum<row_count)
         {
-            (*do_per_row)(row, arg);
+            (*per_row)(row, arg);
             rownum++;
         }
         mysql_free_result(result);
@@ -86,7 +86,7 @@ void mysql_apply_per_partition_from(
         MYSQL *conn,
         char *query,
         int part_count,
-        void (*do_per_row) (MYSQL_ROW, void *),
+        mysql_per_row_func per_row,
         void *arg,
         int start_part)
 {
@@ -99,7 +99,7 @@ void mysql_apply_per_partition_from(
         part++;
         while((row = mysql_fetch_row(result)))
         {
-            (*do_per_row)(row, arg);
+            (*per_row)(row, arg);
         }
         mysql_free_result(result);
     }

@@ -25,40 +25,40 @@ struct bernoulli_arg_flat
     int *zero_slate;
     int *present_totals;
     double *sum_total_ptr;
-    rxmap *words;
+    rxmap *tokens;
 };
 
 struct multinom_arg_flat
 {
     int *occurrences;
     double *sum_total_ptr;
-    rxmap *words;
+    rxmap *tokens;
 };
 
 struct bernoulli_arg_matrix
 {
     int *zero_slate;
     int **present_totals_matrix;
-    int *sub_counts;
+    int *class_counts;
     double *sum_totals;
-    rxmap *subs;
-    rxmap *words;
+    rxmap *classes;
+    rxmap *tokens;
 };
 
 struct multinom_arg_matrix
 {
     int **occurrences_matrix;
-    int *sub_counts;
+    int *class_counts;
     double *sum_totals;
-    rxmap *subs;
-    rxmap *words;
+    rxmap *classes;
+    rxmap *tokens;
 };
 
 struct raw_resources build_raw_resources(struct build_params params);
 
-void bernoulli_matrix(int *sub_counts, double *sum_totals, int **present_totals_matrix, rxmap *subs, rxmap *words, int row_count);
+void bernoulli_matrix(int *class_counts, double *sum_totals, int **present_totals_matrix, rxmap *classes, rxmap *tokens, int row_count);
 
-void multinom_matrix(int *sub_counts, double *sum_totals, int **occurrences_matrix, rxmap *subs, rxmap *words, int row_count);
+void multinom_matrix(int *class_counts, double *sum_totals, int **occurrences_matrix, rxmap *classes, rxmap *tokens, int row_count);
 
 
 void free_raw_resources_arrays(struct raw_resources resources);

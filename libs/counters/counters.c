@@ -23,7 +23,7 @@ static inline void per_row_multinom_flat(MYSQL_ROW row, void *arguments)
     struct multinom_arg_flat arg = * (struct multinom_arg_flat *) arguments;
     int size;
     char **toks = tok_words(row[0], &size);
-    int *indeces = tokens_to_indeces_filtered(arg.words, toks, size);
+    int *indeces = tokens_to_indeces_filtered(arg.tokens, toks, size);
     for(int i = 0; i<size; i++)
     {
         if(indeces[i] != -1)
@@ -41,7 +41,7 @@ static inline void per_row_bernoulli_flat(MYSQL_ROW row, void *arguments)
     struct bernoulli_arg_flat arg = * (struct bernoulli_arg_flat *) arguments;
     int size;
     char **toks = tok_words(row[0], &size);
-    int *indeces = tokens_to_indeces_filtered(arg.words, toks, size);
+    int *indeces = tokens_to_indeces_filtered(arg.tokens, toks, size);
     for(int i = 0; i<size; i++)
     {
         if(indeces[i] != -1 && !arg.zero_slate[indeces[i]])
@@ -74,15 +74,15 @@ static inline void per_row_multinom_matrix(MYSQL_ROW row, void *arguments)
 {
     struct multinom_arg_matrix arg = * (struct multinom_arg_matrix *) arguments;
     tok_all_to_lowerc(row[1]);
-    int subdex = rxmap_get(arg.subs, row[1]);
-    if(subdex != -1)
+    int classdex = rxmap_get(arg.classes, row[1]);
+    if(classdex != -1)
     {
-        arg.sub_counts[subdex]++;
+        arg.class_counts[classdex]++;
         struct multinom_arg_flat flat_arg = 
         {
-            .occurrences = arg.occurrences_matrix[subdex],
-            .sum_total_ptr = arg.sum_totals + subdex,
-            .words = arg.words
+            .occurrences = arg.occurrences_matrix[classdex],
+            .sum_total_ptr = arg.sum_totals + classdex,
+            .tokens = arg.tokens
         };
         per_row_multinom_flat(row, &flat_arg);
     }
@@ -92,16 +92,16 @@ static inline void per_row_bernoulli_matrix(MYSQL_ROW row, void *arguments)
 {
     struct bernoulli_arg_matrix arg = * (struct bernoulli_arg_matrix *) arguments;
     tok_all_to_lowerc(row[1]);
-    int subdex = rxmap_get(arg.subs, row[1]);
-    if(subdex != -1)
+    int classdex = rxmap_get(arg.classes, row[1]);
+    if(classdex != -1)
     {
-        arg.sub_counts[subdex]++;
+        arg.class_counts[classdex]++;
         struct bernoulli_arg_flat flat_arg = 
         {
             .zero_slate = arg.zero_slate,
-            .present_totals = arg.present_totals_matrix[subdex],
-            .sum_total_ptr = arg.sum_totals + subdex,
-            .words = arg.words
+            .present_totals = arg.present_totals_matrix[classdex],
+            .sum_total_ptr = arg.sum_totals + classdex,
+            .tokens = arg.tokens
         };
         per_row_bernoulli_flat(row, &flat_arg);
     }
@@ -110,62 +110,62 @@ static inline void per_row_bernoulli_matrix(MYSQL_ROW row, void *arguments)
 
 
 // occurrences should be a zero'd array of length
-// words->size.
+// tokens->size.
 // this function parses count rows, and afterward
 // occurrences[i] will have the total number of times
-// word i appeared.
-void multinom_flat(double *sum_total_ptr, int *occurrences, rxmap *words, int row_count)
+// token i appeared.
+void multinom_flat(double *sum_total_ptr, int *occurrences, rxmap *tokens, int row_count)
 {
-    struct multinom_arg_flat arg = {.occurrences = occurrences, .sum_total_ptr = sum_total_ptr, .words = words};
+    struct multinom_arg_flat arg = {.occurrences = occurrences, .sum_total_ptr = sum_total_ptr, .tokens = tokens};
     mysql_apply_per_row(conn, MYSQL_SELECT_TEXT, row_count, &per_row_multinom_flat, &arg);
 }
 
 // present_total should be a zero'd array of length
-// words->size.
+// tokens->size.
 // this function parses count rows, and afterward
 // present_total[i] will have the number of rows
-// in which word i was present
-void bernoulli_flat(double *sum_total_ptr, int *present_totals, rxmap *words, int row_count)
+// in which token i was present
+void bernoulli_flat(double *sum_total_ptr, int *present_totals, rxmap *tokens, int row_count)
 {
-    int zero_slate[words->size];
-    memset(zero_slate, 0, sizeof(*zero_slate)*words->size);
+    int zero_slate[tokens->size];
+    memset(zero_slate, 0, sizeof(*zero_slate)*tokens->size);
     struct bernoulli_arg_flat arg = 
     {
         .zero_slate = zero_slate,
         .present_totals = present_totals,
         .sum_total_ptr = sum_total_ptr,
-        .words = words
+        .tokens = tokens
     };
     mysql_apply_per_row(conn, MYSQL_SELECT_TEXT, row_count, &per_row_bernoulli_flat, &arg);
 }
 
-void bernoulli_matrix(int *sub_counts, double *sum_totals, int **present_totals_matrix, rxmap *subs, rxmap *words, int row_count)
+void bernoulli_matrix(int *class_counts, double *sum_totals, int **present_totals_matrix, rxmap *classes, rxmap *tokens, int row_count)
 {
-    int zero_slate[words->size];
-    memset(zero_slate, 0, sizeof(*zero_slate)*words->size);
+    int zero_slate[tokens->size];
+    memset(zero_slate, 0, sizeof(*zero_slate)*tokens->size);
     struct bernoulli_arg_matrix arg = 
     {
         .zero_slate = zero_slate,
-        .sub_counts = sub_counts,
+        .class_counts = class_counts,
         .present_totals_matrix = present_totals_matrix,
         .sum_totals = sum_totals,
-        .words = words,
-        .subs = subs
+        .tokens = tokens,
+        .classes = classes
     };
-    mysql_apply_per_row(conn, MYSQL_SELECT_TEXT_AND_SUB, row_count, &per_row_bernoulli_matrix, &arg);
+    mysql_apply_per_row(conn, MYSQL_SELECT_TEXT_AND_CLASS, row_count, &per_row_bernoulli_matrix, &arg);
 }
 
-void multinom_matrix(int *sub_counts, double *sum_totals, int **occurrences_matrix, rxmap *subs, rxmap *words, int row_count)
+void multinom_matrix(int *class_counts, double *sum_totals, int **occurrences_matrix, rxmap *classes, rxmap *tokens, int row_count)
 {
     struct multinom_arg_matrix arg = 
     {
         .occurrences_matrix = occurrences_matrix, 
         .sum_totals = sum_totals,
-        .sub_counts = sub_counts,
-        .words = words,
-        .subs = subs
+        .class_counts = class_counts,
+        .tokens = tokens,
+        .classes = classes
     };
-    mysql_apply_per_row(conn, MYSQL_SELECT_TEXT_AND_SUB, row_count, &per_row_multinom_matrix, &arg);
+    mysql_apply_per_row(conn, MYSQL_SELECT_TEXT_AND_CLASS, row_count, &per_row_multinom_matrix, &arg);
 }
 
 void init_raw_resources_arrays(struct raw_resources *resptr, int num_classes, int num_tokens)
@@ -179,8 +179,8 @@ void init_raw_resources_arrays(struct raw_resources *resptr, int num_classes, in
 
 struct raw_resources build_raw_resources(struct build_params params)
 {
-    rxmap *classes = build_wordlist(params.classes_filepath, MAXLEN);
-    rxmap *tokens = build_wordlist(params.tokens_filepath, MAXLEN);
+    rxmap *classes = build_tokenlist(params.classes_filepath, MAXLEN);
+    rxmap *tokens = build_tokenlist(params.tokens_filepath, MAXLEN);
 
     struct raw_resources ret;
     init_raw_resources_arrays(&ret, classes->size, tokens->size);
@@ -218,10 +218,10 @@ struct raw_resources read_raw_resources(char *file_path)
     init_raw_resources_arrays(&res, num_classes, num_tokens);
 
     // classes
-    build_load_n_words(fp, num_classes, classes, MAXLEN);
+    build_load_n_tokens(fp, num_classes, classes, MAXLEN);
 
     // tokens
-    build_load_n_words(fp, num_tokens, tokens, MAXLEN);
+    build_load_n_tokens(fp, num_tokens, tokens, MAXLEN);
 
     // matrix
     for(int i = 0; i<num_classes; i++)

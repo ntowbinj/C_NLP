@@ -105,7 +105,7 @@ void undersc_to_space(char *content, long len)
 
 void classifier_init()
 {
-    res = read_raw_resources("/home/n/programming/cstuff/analysis/data/try200subs.bays");
+    res = read_raw_resources("/home/n/programming/cstuff/bayes-server/data/try200subs.bays");
     log_param_sets = malloc(res.classes->size*sizeof(*log_param_sets));
     for(int i = 0; i<res.classes->size; i++)
         log_param_sets[i] = log_param_estimations(res.tokens->size, res.class_counts[i], res.occurrences_matrix[i], 0.1);

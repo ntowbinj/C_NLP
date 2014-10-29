@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 {
     if(argc < 5)
     {
-        fprintf(stderr, "args: classes path, tokens path, size of training set, dest file");
+        fprintf(stderr, "args: classes path, tokens path, size of training set, dest file\n\n");
         exit(1);
     }
     struct build_params params = 

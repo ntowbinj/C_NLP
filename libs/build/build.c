@@ -6,7 +6,7 @@
 #include "tokenize/tokenize.h"
 #include "build.h"
 
-rxmap *build_wordlist(char* filename, int maxlen)
+rxmap *build_tokenlist(char* filename, int maxlen)
 {
     FILE *fp = fopen(filename, "r");
     char line[maxlen];
@@ -30,7 +30,7 @@ rxmap *build_wordlist(char* filename, int maxlen)
     return ret;
 }
 
-void build_load_n_words(FILE *fp, int count, rxmap *dest, int maxlen)
+void build_load_n_tokens(FILE *fp, int count, rxmap *dest, int maxlen)
 {
     char line[maxlen];
     for(int i = 0; i<count; i++)

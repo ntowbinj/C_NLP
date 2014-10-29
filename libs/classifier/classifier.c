@@ -75,8 +75,8 @@ int main(int argc, char *argv[])
     };
 
     //struct raw_resources res_built = build_raw_resources(params);
-    store_raw_resources(res_built, "/home/n/programming/cstuff/analysis/data/try.bays");
-    struct raw_resources res = read_raw_resources("/home/n/programming/cstuff/analysis/data/try.bays");
+    store_raw_resources(res_built, "/home/n/programming/cstuff/bayes-server/data/try.bays");
+    struct raw_resources res = read_raw_resources("/home/n/programming/cstuff/bayes-server/data/try.bays");
 
 
     double *log_param_sets[res.classes->size];
