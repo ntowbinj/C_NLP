@@ -1,0 +1,10 @@
+*
+!*.c
+!*.h
+!*.sh
+!*.md
+!Makefile
+!data/big
+!*/
+src/localconfig.h
+!.gitignore
