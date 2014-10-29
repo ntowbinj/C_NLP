@@ -3,11 +3,12 @@
 #include "radix_map/rxmap.h"
 #include "mysql_help/mysql_help.h"
 
+typedef enum {BERNOULLI, MULTINOM} model_t;
+
 struct build_params
 {
     char *classes_filepath;
     char *tokens_filepath;
-    long training_size;
 };
 
 struct raw_resources
@@ -54,11 +55,23 @@ struct multinom_arg_matrix
     rxmap *tokens;
 };
 
-struct raw_resources build_raw_resources(struct build_params params);
+struct raw_resources build_raw_resources(struct build_params params, struct mysql_visitor visitor, model_t model);
 
-void bernoulli_matrix(int *class_counts, double *sum_totals, int **present_totals_matrix, rxmap *classes, rxmap *tokens, int row_count);
+void bernoulli_matrix(
+        int *class_counts,
+        double *sum_totals,
+        int **present_totals_matrix,
+        rxmap *classes,
+        rxmap *tokens,
+        struct mysql_visitor visitor);
 
-void multinom_matrix(int *class_counts, double *sum_totals, int **occurrences_matrix, rxmap *classes, rxmap *tokens, int row_count);
+void multinom_matrix(
+        int *class_counts,
+        double *sum_totals,
+        int **occurrences_matrix,
+        rxmap *classes,
+        rxmap *tokens,
+        struct mysql_visitor visitor);
 
 
 void free_raw_resources_arrays(struct raw_resources resources);

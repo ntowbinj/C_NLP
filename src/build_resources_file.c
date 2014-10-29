@@ -8,6 +8,7 @@
 #include "util/util.h"
 #include "counters/counters.h"
 #include "classifier/classifier.h"
+#include "mysql_help/mysql_help.h"
 
 int main(int argc, char *argv[])
 {
@@ -16,14 +17,23 @@ int main(int argc, char *argv[])
         fprintf(stderr, "args: classes path, tokens path, size of training set, dest file\n\n");
         exit(1);
     }
+
+    struct mysql_visitor visitor = 
+    {
+        .query = MYSQL_SELECT_TEXT_AND_CLASS,
+        .start_row = 0,
+        .row_count = atoi(argv[3]),
+        .per_row = NULL,
+        .arg = NULL
+    };
+
     struct build_params params = 
     {
         .classes_filepath = argv[1],
-        .tokens_filepath = argv[2],
-        .training_size = atoi(argv[3])
+        .tokens_filepath = argv[2]
     };
 
-    struct raw_resources res = build_raw_resources(params);
+    struct raw_resources res = build_raw_resources(params, visitor, MULTINOM); //MULTINOM hardcoded
     store_raw_resources(res, argv[4]);
     free_raw_resources_arrays(res);
     rxmap_delete(res.classes);

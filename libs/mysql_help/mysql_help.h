@@ -9,6 +9,15 @@
 
 typedef void (*mysql_per_row_func) (MYSQL_ROW, void *);
 
+struct mysql_visitor
+{
+    char *query;
+    int start_row; // currently ignored
+    int row_count;
+    mysql_per_row_func per_row;
+    void *arg;
+};
+
 MYSQL *mysql_start();
 
 void mysql_finish(MYSQL *conn);
@@ -17,33 +26,7 @@ MYSQL_RES *mysql_get_part(MYSQL *conn, int part);
 
 MYSQL_RES *mysql_query_part(MYSQL *conn, int part, char *query);
 
-void mysql_apply_per_row(
-        MYSQL *conn,
-        char *query,
-        int row_count,
-        mysql_per_row_func per_row,
-        void *arg);
+// non-zero mysql_visitor.start_row not currently supported
+void mysql_visit_rows(MYSQL *conn, struct mysql_visitor);
 
-void mysql_apply_per_row_from(
-        MYSQL *conn,
-        char *query,
-        int row_count,
-        mysql_per_row_func per_row,
-        void *arg,
-        int start_part);
-
-void mysql_apply_per_partition(
-        MYSQL *conn,
-        char *query,
-        int part_count,
-        mysql_per_row_func per_row,
-        void *arg);
-
-void mysql_apply_per_partition_from(
-        MYSQL *conn,
-        char *query,
-        int part_count,
-        mysql_per_row_func per_row,
-        void *arg,
-        int start_part);
 #endif

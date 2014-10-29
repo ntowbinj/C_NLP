@@ -36,72 +36,21 @@ MYSQL_RES *mysql_query_part(MYSQL *conn, int part, char *query)
     return mysql_store_result(conn);
 }
 
-void mysql_apply_per_row(
-        MYSQL *conn, 
-        char *query, 
-        int row_count, 
-        mysql_per_row_func per_row,
-        void *arg)
-{
-    mysql_apply_per_row_from(conn, query, row_count, per_row, arg, 0);
-}
-
-void mysql_apply_per_partition(
-        MYSQL *conn, 
-        char *query, 
-        int part_count, 
-        mysql_per_row_func per_row,
-        void *arg)
-{
-    mysql_apply_per_partition_from(conn, query, part_count, per_row, arg, 0);
-}
-
-void mysql_apply_per_row_from(
-        MYSQL *conn,
-        char *query,
-        int row_count,
-        mysql_per_row_func per_row,
-        void *arg,
-        int start_part)
+void mysql_visit_rows(MYSQL *conn, struct mysql_visitor visitor)
 {
     MYSQL_ROW row;
     MYSQL_RES *result;
     int part, rownum;
-    part = start_part;
-    rownum = 0;
-    while(part<NUMPARTS && rownum<row_count)
+    part = rownum = 0;
+    while(part<NUMPARTS && rownum<visitor.row_count)
     {
-        result = mysql_query_part(conn, part, query);
+        result = mysql_query_part(conn, part, visitor.query);
         part++;
-        while((row = mysql_fetch_row(result)) && rownum<row_count)
+        while((row = mysql_fetch_row(result)) && rownum<visitor.row_count)
         {
-            (*per_row)(row, arg);
+            (*visitor.per_row)(row, visitor.arg);
             rownum++;
         }
         mysql_free_result(result);
     }
 }
-
-void mysql_apply_per_partition_from(
-        MYSQL *conn,
-        char *query,
-        int part_count,
-        mysql_per_row_func per_row,
-        void *arg,
-        int start_part)
-{
-    MYSQL_ROW row;
-    MYSQL_RES *result;
-    int part = start_part;
-    while(part<NUMPARTS && part<part_count)
-    {
-        result = mysql_query_part(conn, part, query);
-        part++;
-        while((row = mysql_fetch_row(result)))
-        {
-            (*per_row)(row, arg);
-        }
-        mysql_free_result(result);
-    }
-}
-

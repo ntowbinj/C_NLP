@@ -18,6 +18,7 @@
 MYSQL *conn;
 
 
+
 static inline void per_row_multinom_flat(MYSQL_ROW row, void *arguments)
 {
     struct multinom_arg_flat arg = * (struct multinom_arg_flat *) arguments;
@@ -114,10 +115,21 @@ static inline void per_row_bernoulli_matrix(MYSQL_ROW row, void *arguments)
 // this function parses count rows, and afterward
 // occurrences[i] will have the total number of times
 // token i appeared.
-void multinom_flat(double *sum_total_ptr, int *occurrences, rxmap *tokens, int row_count)
+void multinom_flat(
+        double *sum_total_ptr,
+        int *occurrences,
+        rxmap *tokens,
+        struct mysql_visitor visitor)
 {
-    struct multinom_arg_flat arg = {.occurrences = occurrences, .sum_total_ptr = sum_total_ptr, .tokens = tokens};
-    mysql_apply_per_row(conn, MYSQL_SELECT_TEXT, row_count, &per_row_multinom_flat, &arg);
+    struct multinom_arg_flat arg = 
+    {
+        .occurrences = occurrences,
+        .sum_total_ptr = sum_total_ptr,
+        .tokens = tokens
+    };
+    visitor.per_row = &per_row_multinom_flat;
+    visitor.arg = &arg;
+    mysql_visit_rows(conn, visitor);
 }
 
 // present_total should be a zero'd array of length
@@ -125,7 +137,11 @@ void multinom_flat(double *sum_total_ptr, int *occurrences, rxmap *tokens, int r
 // this function parses count rows, and afterward
 // present_total[i] will have the number of rows
 // in which token i was present
-void bernoulli_flat(double *sum_total_ptr, int *present_totals, rxmap *tokens, int row_count)
+void bernoulli_flat(
+        double *sum_total_ptr,
+        int *present_totals,
+        rxmap *tokens,
+        struct mysql_visitor visitor)
 {
     int zero_slate[tokens->size];
     memset(zero_slate, 0, sizeof(*zero_slate)*tokens->size);
@@ -136,10 +152,18 @@ void bernoulli_flat(double *sum_total_ptr, int *present_totals, rxmap *tokens, i
         .sum_total_ptr = sum_total_ptr,
         .tokens = tokens
     };
-    mysql_apply_per_row(conn, MYSQL_SELECT_TEXT, row_count, &per_row_bernoulli_flat, &arg);
+    visitor.per_row = &per_row_bernoulli_flat;
+    visitor.arg = &arg;
+    mysql_visit_rows(conn, visitor);
 }
 
-void bernoulli_matrix(int *class_counts, double *sum_totals, int **present_totals_matrix, rxmap *classes, rxmap *tokens, int row_count)
+void bernoulli_matrix(
+        int *class_counts,
+        double *sum_totals,
+        int **present_totals_matrix,
+        rxmap *classes,
+        rxmap *tokens,
+        struct mysql_visitor visitor)
 {
     int zero_slate[tokens->size];
     memset(zero_slate, 0, sizeof(*zero_slate)*tokens->size);
@@ -152,10 +176,18 @@ void bernoulli_matrix(int *class_counts, double *sum_totals, int **present_total
         .tokens = tokens,
         .classes = classes
     };
-    mysql_apply_per_row(conn, MYSQL_SELECT_TEXT_AND_CLASS, row_count, &per_row_bernoulli_matrix, &arg);
+    visitor.per_row = &per_row_bernoulli_matrix;
+    visitor.arg = &arg;
+    mysql_visit_rows(conn, visitor);
 }
 
-void multinom_matrix(int *class_counts, double *sum_totals, int **occurrences_matrix, rxmap *classes, rxmap *tokens, int row_count)
+void multinom_matrix(
+        int *class_counts,
+        double *sum_totals,
+        int **occurrences_matrix,
+        rxmap *classes,
+        rxmap *tokens,
+        struct mysql_visitor visitor)
 {
     struct multinom_arg_matrix arg = 
     {
@@ -165,7 +197,9 @@ void multinom_matrix(int *class_counts, double *sum_totals, int **occurrences_ma
         .tokens = tokens,
         .classes = classes
     };
-    mysql_apply_per_row(conn, MYSQL_SELECT_TEXT_AND_CLASS, row_count, &per_row_multinom_matrix, &arg);
+    visitor.per_row = &per_row_multinom_matrix;
+    visitor.arg = &arg;
+    mysql_visit_rows(conn, visitor);
 }
 
 void init_raw_resources_arrays(struct raw_resources *resptr, int num_classes, int num_tokens)
@@ -177,7 +211,7 @@ void init_raw_resources_arrays(struct raw_resources *resptr, int num_classes, in
         resptr->occurrences_matrix[i] = calloc(num_tokens, sizeof(**resptr->occurrences_matrix));
 }
 
-struct raw_resources build_raw_resources(struct build_params params)
+struct raw_resources build_raw_resources(struct build_params params, struct mysql_visitor visitor, model_t model)
 {
     rxmap *classes = build_tokenlist(params.classes_filepath, MAXLEN);
     rxmap *tokens = build_tokenlist(params.tokens_filepath, MAXLEN);
@@ -188,14 +222,27 @@ struct raw_resources build_raw_resources(struct build_params params)
     ret.classes = classes;
     ret.tokens = tokens;
 
-    multinom_matrix(
-            ret.class_counts,
-            ret.sum_totals,
-            ret.occurrences_matrix,
-            ret.classes,
-            ret.tokens,
-            params.training_size);
-
+    switch(model)
+    {
+        case BERNOULLI:
+            bernoulli_matrix(
+                    ret.class_counts,
+                    ret.sum_totals,
+                    ret.occurrences_matrix,
+                    ret.classes,
+                    ret.tokens,
+                    visitor);
+            break;
+        case MULTINOM:
+            multinom_matrix(
+                    ret.class_counts,
+                    ret.sum_totals,
+                    ret.occurrences_matrix,
+                    ret.classes,
+                    ret.tokens,
+                    visitor);
+            break;
+    }
     mysql_finish(conn);
     return ret;
 }
