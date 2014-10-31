@@ -69,12 +69,11 @@ int main(int argc, char *argv[])
     };
 
     struct raw_resources res = build_raw_resources(params, training_vis, MULTINOM); //MULTINOM hardcoded
-    double **param_vecs = get_param_vecs(
+    double **param_vecs = CNB_get_param_vecs(
             res.classes->size,
             res.tokens->size,
             res.class_counts,
             res.occurrences_matrix,
-            NULL,
             0.4);
     free_raw_resources_arrays(res);
 
@@ -107,4 +106,5 @@ int main(int argc, char *argv[])
     rxmap_delete(res.classes);
     rxmap_delete(res.tokens);
 }
+
 

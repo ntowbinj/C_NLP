@@ -42,7 +42,7 @@ char **tok_words(char *line, int *size)
         ahead = behind;
         while(!WHITE(*ahead) && *ahead != '\0')
         {
-            if(*ahead == '.' || *ahead == ',' || *ahead == '!' || *ahead == '-')
+            if(*ahead == '.' || *ahead == ',' || *ahead == '!' || *ahead == '-' || *ahead == '?')
             {
                 *ahead = ' ';
                 break;
