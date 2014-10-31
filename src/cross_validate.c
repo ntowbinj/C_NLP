@@ -11,9 +11,6 @@
 #include "classifier/cnb_estimator.h"
 #include "mysql_help/mysql_help.h"
 
- char *TEXT_AND_CLASS_EVEN = "select text, sub.name from comment partition(p%d) inner join post on comment.post_id = post.id inner join sub on post.sub_id = sub.id where (comment.id % 2) = 0;";
-
- char *TEXT_AND_CLASS_ODD = "select text, sub.name from comment partition(p%d) inner join post on comment.post_id = post.id inner join sub on post.sub_id = sub.id where (comment.id % 2) = 1;";
 
 struct validator
 {
@@ -27,20 +24,20 @@ struct validator
 void validator_per_row(MYSQL_ROW row, void *arg)
 {
     struct validator v = * (struct validator *) arg;
-    int size;
-    char **toks = tok_words(row[0], &size);
-    int *indeces = tokens_to_indeces_filtered(v.tokens, toks, size);
     tok_all_to_lowerc(row[1]);
     int actual = rxmap_get(v.classes, row[1]);
     if(actual != -1)
     {
         *(v.totalptr) += 1;
+        int size;
+        char **toks = tok_words(row[0], &size);
+        int *indeces = tokens_to_indeces_filtered(v.tokens, toks, size);
         int guess = top_score_index(size, indeces, v.classes->size, v.param_vecs);
         if(guess == actual)
             *(v.rightptr) += 1;
+        free(toks);
+        free(indeces);
     }
-    free(toks);
-    free(indeces);
 }
 
 
@@ -54,8 +51,9 @@ int main(int argc, char *argv[])
 
     struct mysql_visitor training_vis = 
     {
-        .query = TEXT_AND_CLASS_EVEN,
+        .query = MYSQL_SELECT_TEXT_AND_CLASS,
         .start_row = 0,
+        .which_half = 0,
         .row_count = atoi(argv[3]),
         .per_row = NULL,
         .arg = NULL
@@ -92,8 +90,9 @@ int main(int argc, char *argv[])
 
     struct mysql_visitor validate_vis =
     {
-        .query = TEXT_AND_CLASS_ODD,
+        .query = MYSQL_SELECT_TEXT_AND_CLASS,
         .start_row = 0,
+        .which_half = 1,
         .row_count = atoi(argv[4]),
         .per_row = &validator_per_row,
         .arg = &v
@@ -107,4 +106,5 @@ int main(int argc, char *argv[])
     rxmap_delete(res.classes);
     rxmap_delete(res.tokens);
 }
+
 

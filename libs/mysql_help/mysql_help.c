@@ -42,10 +42,13 @@ void mysql_visit_rows(MYSQL *conn, struct mysql_visitor visitor)
     MYSQL_RES *result;
     int part, rownum;
     part = rownum = 0;
+    if(visitor.which_half != -1)
+        part = visitor.which_half; // 0/1 mod 2, even/odd
     while(part<NUMPARTS && rownum<visitor.row_count)
     {
         result = mysql_query_part(conn, part, visitor.query);
         part++;
+        if(visitor.which_half != -1) part++; // skip one
         while((row = mysql_fetch_row(result)) && rownum<visitor.row_count)
         {
             (*visitor.per_row)(row, visitor.arg);

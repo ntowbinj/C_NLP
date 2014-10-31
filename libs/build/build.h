@@ -3,7 +3,7 @@
 
 #include "radix_map/rxmap.h"
 
-rxmap *build_tokenlist(char* filename, int);
+rxmap *build_wordlist(char* filename, int);
 void build_load_n_tokens(FILE *fp, int count, rxmap *dest, int maxlen);
 int *tokens_to_indeces(rxmap *map, char **words, int len);
 

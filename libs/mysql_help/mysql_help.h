@@ -15,6 +15,7 @@ struct mysql_visitor
     int start_row; // currently ignored
     int row_count;
     mysql_per_row_func per_row;
+    int which_half;
     void *arg;
 };
 

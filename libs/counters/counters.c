@@ -213,8 +213,8 @@ void init_raw_resources_arrays(struct raw_resources *resptr, int num_classes, in
 
 struct raw_resources build_raw_resources(struct build_params params, struct mysql_visitor visitor, model_t model)
 {
-    rxmap *classes = build_tokenlist(params.classes_filepath, MAXLEN);
-    rxmap *tokens = build_tokenlist(params.tokens_filepath, MAXLEN);
+    rxmap *classes = build_wordlist(params.classes_filepath, MAXLEN);
+    rxmap *tokens = build_wordlist(params.tokens_filepath, MAXLEN);
 
     struct raw_resources ret;
     init_raw_resources_arrays(&ret, classes->size, tokens->size);

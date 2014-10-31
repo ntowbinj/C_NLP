@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "args: wordlist path");
         exit(-1);
     }
-    rxmap *map = build_tokenlist(argv[1], MAXLEN);
+    rxmap *map = build_wordlist(argv[1], MAXLEN);
     printf("%d\n", rxmap_get(map, "the"));
     printf("%d\n", rxmap_get(map, "them"));
     printf("%d\n", rxmap_get(map, "then"));

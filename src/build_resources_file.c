@@ -22,6 +22,7 @@ int main(int argc, char *argv[])
     {
         .query = MYSQL_SELECT_TEXT_AND_CLASS,
         .start_row = 0,
+        .which_half = -1,
         .row_count = atoi(argv[3]),
         .per_row = NULL,
         .arg = NULL

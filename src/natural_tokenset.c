@@ -61,6 +61,7 @@ int main(int argc, char *argv[])
         .query = MYSQL_SELECT_TEXT,
         .start_row = 0,
         .row_count = atoi(argv[1]),
+        .which_half = -1,
         .per_row = &natural_per_row,
         .arg = &arg
     };
