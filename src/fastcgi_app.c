@@ -76,7 +76,10 @@ static void *func(void *arg)
             indeces = tokens_to_indeces_filtered(res.tokens, toks, size);
             free_them = 1;
             int class_index = top_score_index(size, indeces, res.classes->size, param_vecs);
-            response = res.classes->keys->arr[class_index];
+            if(class_index == -1)
+                response = "";
+            else
+                response = res.classes->keys->arr[class_index];
         }
 
         FCGX_FPrintF(request.out, "Content-type: text/html\r\n\r\n%s", response);

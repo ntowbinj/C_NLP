@@ -18,6 +18,18 @@ double *default_estimator(int num_tokens, int class_samplesize, int *occurrences
 int top_score_index(int num_tokens, int *indeces, int class_samplesize, double **params);
 
 /**
+ * get the top k guesses in order
+ * assumes k <= num_classes
+ * inefficiently uses full qsort even for small k
+ */
+int *top_k_score_indeces(
+        int num_tokens,
+        int *indeces,
+        int num_classes,
+        double **param_vecs,
+        int k);
+
+/**
  * given dimensions, a param_estimator, and a smoothing arg,
  * and non-normalized count vectors,
  * create a list of the parameter vectors in log space

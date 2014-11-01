@@ -22,15 +22,34 @@ static double score_for_class(int num_tokens, int *indeces, double *params)
     return score;
 }
 
-int top_score_index(int num_tokens, int *indeces, int class_samplesize, double **param_vecs)
+int *top_k_score_indeces(
+        int num_tokens,
+        int *indeces,
+        int num_classes,
+        double **param_vecs,
+        int k)
 {
-    int maxdex = 0;
+    double scores[num_classes];
+    for(int i = 0; i<num_classes; i++)
+        scores[i] = score_for_class(num_tokens, indeces, param_vecs[i]);
+    int *index_remap = util_sortby_remap_dbl(scores, num_classes);
+    int *ret = malloc(k*sizeof(*ret));
+    for(int i = 0; i<k; i++)
+        ret[i] = index_remap[num_classes - i - 1];
+    free(index_remap);
+    return ret;
+}
+
+
+int top_score_index(int num_tokens, int *indeces, int num_classes, double **param_vecs)
+{
+    int maxdex = -1;
     double max_score = -DBL_MAX;
     double score;
-    for(int i = 0; i<class_samplesize; i++)
+    for(int i = 0; i<num_classes; i++)
     {
         score = score_for_class(num_tokens, indeces, param_vecs[i]);
-        if(score > max_score)
+        if(score > max_score && score)
         {
             max_score = score;
             maxdex = i;
@@ -82,4 +101,17 @@ double *default_estimator(int num_tokens, int class_samplesize, int *occurrences
     return estimations;
 }
 
+
+/*double std_dev(int num_classes, int token_index, int **matrix)
+{
+
+    long total = 0;
+    for(int i = 0; i<num_classes; i++)
+        total += matrix[i][token_index];
+    double mean = ((double) total)/num_classes;
+    double variance = 0;
+    for(int i = 0; i<num_classes; i++)
+        variance += pow((matrix[i][token_index] - mean), 2);
+    return pow(sqrt(variance), .1);
+}*/
 
