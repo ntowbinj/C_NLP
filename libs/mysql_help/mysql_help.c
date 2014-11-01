@@ -32,6 +32,7 @@ MYSQL_RES *mysql_query_part(MYSQL *conn, int part, char *query)
     // in case the partition number is 10 digits (never)
     char str[strlen(query) + 10];
     sprintf(str, query, part);
+    printf("%s\n", str);
     mysql_query(conn, str);
     return mysql_store_result(conn);
 }
