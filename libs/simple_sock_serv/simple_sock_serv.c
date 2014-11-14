@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <pthread.h>
 #include "simple_sock_serv.h"
@@ -50,6 +51,8 @@ static void *worker(void *argsptr)
         pthread_mutex_unlock(&args.accept_mutex);
         if(socketfd >= 0)
         {
+            int set = 1;
+            setsockopt(socketfd, IPPROTO_TCP, TCP_NODELAY, (char *)&set, sizeof(set));
             int len = -1;
             read(socketfd, &len, sizeof(len));
             if(len > BUFFLEN-1)
@@ -59,7 +62,6 @@ static void *worker(void *argsptr)
             args.do_it(buf, strlen(buf), socketfd);
             close(socketfd);
         }
-        sleep(1);
     }
     return NULL;
 }

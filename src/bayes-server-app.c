@@ -1,8 +1,5 @@
 #include <stdio.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
@@ -67,7 +64,7 @@ void free_stuff()
 int main(void)
 {
     classifier_init();
-    simple_sock_serv(20, &do_it, 8080, 64, 4096);
+    simple_sock_serv(NUM_WORKERS, &do_it, PORT, B_LOG, BUFSZ);
     free_stuff();
 }
 
