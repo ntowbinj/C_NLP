@@ -58,7 +58,7 @@ static void *worker(void *argsptr)
             if(len > BUFFLEN-1)
                 len = BUFFLEN;
             buf[len] = '\0';
-            read(socketfd, buf, BUFFLEN*sizeof(*buf));
+            read(socketfd, buf, len*sizeof(*buf));
             args.do_it(buf, strlen(buf), socketfd);
             close(socketfd);
         }
