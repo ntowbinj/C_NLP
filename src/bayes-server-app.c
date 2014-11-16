@@ -16,7 +16,7 @@
 
 #include "localconfig.h"
 
-double **param_vecs;
+float **param_vecs;
 struct raw_resources res;
 void free_stuff();
 

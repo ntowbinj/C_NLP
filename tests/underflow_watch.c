@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 
     struct raw_resources res = read_raw_resources(argv[1]);
 
-    double **param_vecs = get_param_vecs(
+    float **param_vecs = get_param_vecs(
             res.classes->size,
             res.tokens->size,
             res.class_counts,

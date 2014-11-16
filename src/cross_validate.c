@@ -16,7 +16,7 @@
 
 struct validator
 {
-    double **param_vecs;
+    float **param_vecs;
     rxmap *classes;
     rxmap *tokens;
     int *totals;
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
     };
 
     struct raw_resources res = build_raw_resources(params, training_vis, MULTINOM); //MULTINOM hardcoded
-    double **param_vecs = get_param_vecs(
+    float **param_vecs = get_param_vecs(
             res.classes->size,
             res.tokens->size,
             res.class_counts,

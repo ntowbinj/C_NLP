@@ -3,19 +3,19 @@
 
 #include "radix_map/rxmap.h"
 
-typedef double *(*param_estimator)(int, int, int*, float); 
+typedef float *(*param_estimator)(int, int, int*, float); 
 
 /**
  * the most basic, unsophisticated estimator that will be used
  * if the param_estimator arg to get_param_vecs is NULL
  */
-double *default_estimator(int num_tokens, int class_samplesize, int *occurrences, float smoothing);
+float *default_estimator(int num_tokens, int class_samplesize, int *occurrences, float smoothing);
 
 /**
  * get the class index of the classification
  * from the paramater vectors
  */
-int top_score_index(int num_tokens, int *indeces, int class_samplesize, double **params);
+int top_score_index(int num_tokens, int *indeces, int class_samplesize, float **params);
 
 /**
  * get the top k guesses in order
@@ -26,7 +26,7 @@ int *top_k_score_indeces(
         int num_tokens,
         int *indeces,
         int num_classes,
-        double **param_vecs,
+        float **param_vecs,
         int k);
 
 /**
@@ -34,7 +34,7 @@ int *top_k_score_indeces(
  * and non-normalized count vectors,
  * create a list of the parameter vectors in log space
  */
-double **get_param_vecs(
+float **get_param_vecs(
         int num_classes,
         int num_tokens,
         int *class_samplesizes,
@@ -45,6 +45,6 @@ double **get_param_vecs(
 /**
  * conveniently frees the parameter list, non-essential
  */
-void free_param_vecs(int num_classes, double **vectors);
+void free_param_vecs(int num_classes, float **vectors);
 
 #endif

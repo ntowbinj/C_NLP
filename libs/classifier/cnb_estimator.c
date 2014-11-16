@@ -10,17 +10,17 @@
 #include "util/util.h"
 #include "classifier/classifier.h"
 
-double **CNB_get_param_vecs(
+float **CNB_get_param_vecs(
         int num_classes,
         int num_tokens,
         int *class_samplesizes,
         int **vectors,
         float smootharg)
 {
-    double **vecs = malloc(num_classes*sizeof(*vecs));
-    double class_totals[num_classes];
+    float **vecs = malloc(num_classes*sizeof(*vecs));
+    float class_totals[num_classes];
     memset(class_totals, 0, num_classes*sizeof(*class_totals));
-    double tok_totals[num_tokens];
+    float tok_totals[num_tokens];
     memset(tok_totals, 0, num_tokens*sizeof(*tok_totals));
     long double all_tokens = 0;
     for(int i = 0; i<num_classes; i++)
@@ -36,10 +36,10 @@ double **CNB_get_param_vecs(
     printf("%Lf\n", all_tokens);
     for(int i = 0; i<num_classes; i++)
     {
-        double log_denom = (double) log2l(all_tokens - class_totals[i] + smootharg*num_tokens);
+        double log_denom = log2(all_tokens - class_totals[i] + smootharg*num_tokens);
         vecs[i] = malloc(num_tokens*sizeof(*vecs[i]));
         for(int j = 0; j<num_tokens; j++)
-            vecs[i][j] = -1 * (log2(tok_totals[j] - (double) vectors[i][j] + smootharg) - log_denom);
+            vecs[i][j] = -1 * (log2(tok_totals[j] - (float) vectors[i][j] + smootharg) - log_denom);
     }
     return vecs;
 }

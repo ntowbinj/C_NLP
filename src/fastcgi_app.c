@@ -24,7 +24,7 @@
 
 int continue_accepting = 1;
 
-double **param_vecs;
+float **param_vecs;
 struct raw_resources res;
 void free_stuff();
 void undersc_to_space(char *content, long len);

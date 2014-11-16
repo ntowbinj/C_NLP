@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 
     struct raw_resources res = read_raw_resources(argv[1]);
 
-    double **param_vecs;
+    float **param_vecs;
     if(!strcmp(argv[2], "CNB"))
     {
         param_vecs = CNB_get_param_vecs(

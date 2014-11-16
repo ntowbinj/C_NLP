@@ -18,7 +18,7 @@ struct natural_arg
     rxmap *tokens;
 };
 
-double *mutual_info_per_token(
+float *mutual_info_per_token(
         int num_classes,
         int num_tokens,
         int *class_counts,
@@ -46,7 +46,7 @@ double *mutual_info_per_token(
         }
         tok_dist[j] = docs_with_tok/doc_count;
     }
-    double *mutual_infos = malloc(num_tokens*sizeof(*mutual_infos));
+    float *mutual_infos = malloc(num_tokens*sizeof(*mutual_infos));
     for(int j = 0; j<num_tokens; j++)
     {
         double sum = 0;
@@ -88,13 +88,13 @@ int main(int argc, char *argv[])
 
     struct raw_resources res = build_raw_resources(params, training_vis, BERNOULLI);
 
-    double *mutual_infos = mutual_info_per_token(
+    float *mutual_infos = mutual_info_per_token(
             res.classes->size,
             res.tokens->size,
             res.class_counts,
             res.occurrences_matrix);
     free_raw_resources_arrays(res);
-    int *index_remap = util_sortby_remap_dbl(mutual_infos, res.tokens->size);
+    int *index_remap = util_sortby_remap_flt(mutual_infos, res.tokens->size);
 
     int k = atoi(argv[4]);
     if(k > res.tokens->size)

@@ -15,7 +15,7 @@
 
 struct subset_validator
 {
-    double **param_vecs;
+    float **param_vecs;
     rxmap *classes_full;
     rxmap *classes_subset;
     rxmap *tokens;
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     };
 
     struct raw_resources res = build_raw_resources(params, training_vis, MULTINOM); //MULTINOM hardcoded
-    double **param_vecs = get_param_vecs(
+    float **param_vecs = get_param_vecs(
             res.classes->size,
             res.tokens->size,
             res.class_counts,
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 
     MYSQL *connc = mysql_start();
     mysql_visit_rows(connc, validate_vis);
-    printf("%f\n", right/(double)total);
+    printf("%f\n", right/(float)total);
     mysql_finish(connc);
     free_param_vecs(res.classes->size, param_vecs);
     rxmap_delete(res.classes);
