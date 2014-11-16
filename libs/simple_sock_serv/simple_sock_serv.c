@@ -35,9 +35,6 @@ static void stop_it(int sig)
 static void *worker(void *argsptr)
 {
     char buf[BUFFLEN];
-    struct sockaddr_in cli_addr;
-    memset((char *) &cli_addr, 0, sizeof(cli_addr));
-    socklen_t length;
     struct worker_args args;
     int socketfd;
     args = * (struct worker_args *) argsptr;
@@ -46,8 +43,7 @@ static void *worker(void *argsptr)
         pthread_mutex_lock(&args.accept_mutex);
         if(!*args.continue_flagptr)
             break;
-        length = sizeof(cli_addr);
-        socketfd = accept(args.listenfd, (struct sockaddr *) &cli_addr, &length);
+        socketfd = accept(args.listenfd, NULL, NULL);
         pthread_mutex_unlock(&args.accept_mutex);
         if(socketfd >= 0)
         {
