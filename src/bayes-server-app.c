@@ -67,7 +67,7 @@ int main(void)
         return 0;
     setpgrp();
     classifier_init();
-    simple_sock_serv(NUM_WORKERS, &do_it, PORT, B_LOG, BUFSZ);
+    simple_sock_serv(NUM_WORKERS, &do_it, "/var/run/bays2.socket", B_LOG, BUFSZ);
     free_stuff();
 }
 

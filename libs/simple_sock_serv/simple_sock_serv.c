@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>
+#include <sys/un.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -63,15 +64,15 @@ static void *worker(void *argsptr)
 }
     
 
-void simple_sock_serv(int num_workers, void (*do_it)(char *, int, int), int port, int backlog, int bufflen)
+void simple_sock_serv(int num_workers, void (*do_it)(char *, int, int), char *sock_path, int backlog, int bufflen)
 {
     BUFFLEN = bufflen;
-    static struct sockaddr_in serv_addr; 
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    serv_addr.sin_port = htons(port);
+    struct sockaddr_un serv_addr; 
+    memset(&serv_addr, 0, sizeof(struct sockaddr_un));
+    serv_addr.sun_family = AF_UNIX;
+    strncpy(serv_addr.sun_path, sock_path, sizeof(serv_addr.sun_path) - 1);
 
-    if((listenfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    if((listenfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
         quit("couldn't open listening socket");
     if(bind(listenfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
         quit("couldn't bind to port");
@@ -95,4 +96,5 @@ void simple_sock_serv(int num_workers, void (*do_it)(char *, int, int), int port
     worker(&args); 
     for(int i = 1; i<num_workers; i++)
         pthread_join(thrds[i], NULL);
+    unlink(sock_path);
 }

@@ -8,6 +8,6 @@ struct worker_args {
     int *continue_flagptr;
 };
 
-void simple_sock_serv(int num_workers, void (*do_it)(char *, int, int), int port, int backlog, int buflen);
+void simple_sock_serv(int num_workers, void (*do_it)(char *, int, int), char *sock_path, int backlog, int bufflen);
 
 #endif
