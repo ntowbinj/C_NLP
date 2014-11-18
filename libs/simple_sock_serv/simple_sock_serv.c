@@ -1,70 +1,72 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
 #include <string.h>
-#include <fcntl.h>
 #include <sys/un.h>
 #include <signal.h>
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include "simple_sock_serv.h"
+#include "block_q.h"
 
 static int continue_flag = 1;
 static int listenfd;
-static pthread_mutex_t accept_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int BUFFLEN;
-
-static void quit(char *message)
-{
-    perror(message);
-    exit(-1);
-}
+static sem_t thrd_count;
+static block_q conn_q;
+static void (*callback)(char *, int, int);
 
 static void stop_it(int sig)
 {
-    pthread_mutex_lock(&accept_mutex);
     shutdown(listenfd, SHUT_RDWR);
     continue_flag = 0;
-    pthread_mutex_unlock(&accept_mutex);
 }
 
-static void *worker(void *argsptr)
+static void *worker(void *ign)
 {
     char buf[BUFFLEN];
-    struct worker_args args;
-    int socketfd;
-    args = * (struct worker_args *) argsptr;
-    while(1)
+    int socketfd = block_q_take(&conn_q);
+    if(socketfd >= 0)
     {
-        pthread_mutex_lock(&args.accept_mutex);
-        if(!*args.continue_flagptr)
-            break;
-        socketfd = accept(args.listenfd, NULL, NULL);
-        pthread_mutex_unlock(&args.accept_mutex);
-        if(socketfd >= 0)
+        int len = -1;
+        while(read(socketfd, &len, sizeof(len)) > 0 && continue_flag)
         {
-            int set = 1;
-            setsockopt(socketfd, IPPROTO_TCP, TCP_NODELAY, (char *)&set, sizeof(set));
-            int len = -1;
-            read(socketfd, &len, sizeof(len));
             if(len > BUFFLEN-1)
                 len = BUFFLEN;
             buf[len] = '\0';
             read(socketfd, buf, len*sizeof(*buf));
-            args.do_it(buf, strlen(buf), socketfd);
-            close(socketfd);
+            (*callback)(buf, strlen(buf), socketfd);
         }
+        close(socketfd);
     }
+    sem_post(&thrd_count);
     return NULL;
 }
     
+static int set_handlers()
+{
+    struct sigaction finish = {
+        .sa_handler = &stop_it,
+        .sa_flags = 0
+    };
+    if(sigaction(SIGTERM, &finish, 0) < 0)
+        return -1;
+    if(sigaction(SIGINT, &finish, 0) < 0)
+        return -1;
 
-void simple_sock_serv(int num_workers, void (*do_it)(char *, int, int), char *sock_path, int backlog, int bufflen)
+    struct sigaction pip = {
+        .sa_handler = SIG_IGN,
+        .sa_flags = 0
+    };
+
+    if(sigaction(SIGPIPE, &pip, 0) < 0)
+        return -1;
+
+    return 0;
+}
+
+int simple_sock_serv(int max_conns, void (*callback_func)(char *, int, int), char *sock_path, int backlog, int bufflen)
 {
     BUFFLEN = bufflen;
     struct sockaddr_un serv_addr; 
@@ -73,28 +75,55 @@ void simple_sock_serv(int num_workers, void (*do_it)(char *, int, int), char *so
     strncpy(serv_addr.sun_path, sock_path, sizeof(serv_addr.sun_path) - 1);
 
     if((listenfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
-        quit("couldn't open listening socket");
+        return -1;
     if(bind(listenfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
-        quit("couldn't bind to port");
+        return -1;
     if(listen(listenfd, backlog) < 0)
-        quit("listen failed");
+        return -1;
 
-    signal(SIGTERM, &stop_it);
-    signal(SIGINT, &stop_it);
+    if(set_handlers() < 0)
+        return -1;
 
-    struct worker_args args = {
-        .listenfd = listenfd,
-        .do_it = do_it,
-        .accept_mutex = accept_mutex,
-        .continue_flagptr = &continue_flag
-    };
 
-    pthread_t thrds[num_workers];
-    for(int i = 1; i<num_workers; i++)
-        pthread_create(&thrds[i], NULL, &worker, &args);
+    callback = callback_func;
 
-    worker(&args); 
-    for(int i = 1; i<num_workers; i++)
-        pthread_join(thrds[i], NULL);
+    /* a blocking queue seems like overkill
+     * for passing fd's to threads, but I had an implementation 
+     * already.  Not synchronizing this passing 
+     * leaves the possilbity for unlikely race conditions.
+     * The alternatives would be casting
+     * int to void*, or mallocing an int and expecting
+     * the thread to free it.  This feels safer.
+     */
+    int q_buffer;
+    block_q_init(&conn_q, 1, &q_buffer);
+    sem_init(&thrd_count, 0, max_conns);
+
+    int socketfd;
+    while(continue_flag)
+    {
+        socketfd = accept(listenfd, NULL, NULL);
+        int wait_success = sem_trywait(&thrd_count);
+        if(wait_success < 0 || !continue_flag)
+        {
+            int allowed = 0;
+            write(socketfd, &allowed, sizeof(allowed));
+            close(socketfd);
+        }
+        else
+        {
+            int allowed = 1;
+            write(socketfd, &allowed, sizeof(allowed));
+            block_q_put(&conn_q, socketfd);
+            pthread_attr_t attr;
+            pthread_attr_init(&attr);
+            pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+            pthread_t thrd;
+            pthread_create(&thrd, &attr, &worker, NULL);
+            pthread_attr_destroy(&attr);
+        }
+    }
+    block_q_destroy(&conn_q);
     unlink(sock_path);
+    return 0;
 }

@@ -1,13 +1,11 @@
 #ifndef SOCK_SERV_H
 #define SOCK_SERV_H
 
-struct worker_args {
-    int listenfd;
-    void (*do_it)(char *, int, int);
-    pthread_mutex_t accept_mutex;
-    int *continue_flagptr;
-};
+#define SIMP_SOCK_SEND(fd, res, len) \
+    write(fd, &len, sizeof(int)); \
+    write(fd, res, sizeof(char)*len);
 
-void simple_sock_serv(int num_workers, void (*do_it)(char *, int, int), char *sock_path, int backlog, int bufflen);
+
+int simple_sock_serv(int num_workers, void (*callback)(char *, int, int), char *sock_path, int backlog, int bufflen);
 
 #endif

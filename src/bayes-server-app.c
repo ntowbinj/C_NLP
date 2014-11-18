@@ -36,7 +36,7 @@ void do_it(char *buff, int bufflen, int outfd)
 
 
     int len = strlen(response);
-    write(outfd, response, sizeof(*response)*len);
+    SIMP_SOCK_SEND(outfd, response, len);
     free(toks);
     free(indeces);
 }
@@ -67,7 +67,11 @@ int main(void)
         return 0;
     setpgrp();
     classifier_init();
-    simple_sock_serv(NUM_WORKERS, &do_it, "/var/run/bays2.socket", B_LOG, BUFSZ);
+    int suc = simple_sock_serv(NUM_WORKERS, &do_it, SOCK_PATH, B_LOG, BUFSZ);
+    if(suc < 0)
+       perror("server failed"); 
     free_stuff();
+    printf("bye\n");
+    pthread_exit(NULL);
 }
 
