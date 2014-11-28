@@ -10,7 +10,7 @@
 #include "simple_sock_serv.h"
 #include "block_q.h"
 
-static int continue_flag = 1;
+static volatile sig_atomic_t halt_flag = 0;
 static int listenfd;
 static int BUFFLEN;
 static sem_t thrd_count;
@@ -20,7 +20,7 @@ static void (*callback)(char *, int, int);
 static void stop_it(int sig)
 {
     shutdown(listenfd, SHUT_RDWR);
-    continue_flag = 0;
+    halt_flag = 1;
 }
 
 static void *worker(void *ign)
@@ -30,7 +30,7 @@ static void *worker(void *ign)
     if(socketfd >= 0)
     {
         int len = -1;
-        while(read(socketfd, &len, sizeof(len)) > 0 && continue_flag)
+        while(read(socketfd, &len, sizeof(len)) > 0 && !halt_flag)
         {
             if(len > BUFFLEN-1)
                 len = BUFFLEN;
@@ -93,18 +93,19 @@ int simple_sock_serv(int max_conns, void (*callback_func)(char *, int, int), cha
      * leaves the possilbity for unlikely race conditions.
      * The alternatives would be casting
      * int to void*, or mallocing an int and expecting
-     * the thread to free it.  This feels safer.
+     * the thread to free it.  
      */
+
     int q_buffer;
     block_q_init(&conn_q, 1, &q_buffer);
     sem_init(&thrd_count, 0, max_conns);
 
     int socketfd;
-    while(continue_flag)
+    while(!halt_flag)
     {
         socketfd = accept(listenfd, NULL, NULL);
         int wait_success = sem_trywait(&thrd_count);
-        if(wait_success < 0 || !continue_flag)
+        if(wait_success < 0 || halt_flag)
         {
             int allowed = 0;
             write(socketfd, &allowed, sizeof(allowed));
