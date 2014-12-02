@@ -10,6 +10,8 @@
 #include "simple_sock_serv.h"
 #include "block_q.h"
 
+#define GARBAGE_LEN 128
+
 static volatile sig_atomic_t halt_flag = 0;
 static int listenfd;
 static int BUFFLEN;
@@ -29,14 +31,25 @@ static void *worker(void *ign)
     int socketfd = block_q_take(&conn_q);
     if(socketfd >= 0)
     {
-        int len = -1;
+        int len = -1; // not counting null termination, there is none on socket
+        int read_len;
         while(read(socketfd, &len, sizeof(len)) > 0 && !halt_flag)
         {
+            read_len = len;
             if(len > BUFFLEN-1)
-                len = BUFFLEN;
-            buf[len] = '\0';
-            read(socketfd, buf, len*sizeof(*buf));
+                read_len = BUFFLEN-1;
+            buf[read_len] = '\0';
+            read(socketfd, buf, read_len*sizeof(*buf));
             (*callback)(buf, strlen(buf), socketfd);
+            int remaining = len - read_len;
+            while(remaining) // discard excess input without closing
+            {
+                int amount = BUFFLEN;
+                if(amount > remaining)
+                    amount = remaining;
+                remaining -= amount;
+                read(socketfd, buf, amount*sizeof(*buf));
+            }
         }
         close(socketfd);
     }
