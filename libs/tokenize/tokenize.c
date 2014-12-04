@@ -3,9 +3,10 @@
 #include <string.h> 
 #include "tokenize.h"
 #define SHIFT ('A' - 'a')
-#define WHITE(c) (c == ' ' || c == '\n' || c == '\0')
+#define ALPH_INSIDE(x) ((x) >= 'a' && (x) <= 'z')
+#define ASCII 128
 
-
+static const char WHITES[] = {' ', '\n', '.', ',', '!', '-', '?', '\0', '_', ':', ';', '"', '(', ')'};
 
 char *tok_all_to_lowerc(char *line)
 {
@@ -28,27 +29,24 @@ char *tok_all_to_lowerc(char *line)
         
 char **tok_words(char *line, int *size)
 {
+    static char white_set[ASCII] = { 0 };
+    static int initialized = 0;
+    if(!initialized)
+    {
+        for(int i = 0; i<sizeof(WHITES)/sizeof(char); i++)
+            white_set[(int) WHITES[i]] = 1;
+        initialized = 1;
+    }
     char *ahead, *behind, endpt;
     ahead = behind = line;
     int wordc = 0;
     char **words = malloc(strlen(line) * sizeof(*words));
     do
     {
-        while(WHITE(*behind) && *behind != '\0')
-        {
-            behind++;
-        }
+        while(white_set[(int) *behind] && *behind != '\0') behind++;
         if(*behind == '\0') break;
         ahead = behind;
-        while(!WHITE(*ahead) && *ahead != '\0')
-        {
-            if(*ahead == '.' || *ahead == ',' || *ahead == '!' || *ahead == '-' || *ahead == '?')
-            {
-                *ahead = ' ';
-                break;
-            }
-            ahead++;
-        }
+        while(!white_set[(int) *ahead]) ahead++;
         char *walk_ahead, *walk_behind;
         walk_ahead = walk_behind = behind;
         endpt = *ahead;

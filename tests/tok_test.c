@@ -9,7 +9,8 @@
 
 int main()
 {
-    /*MYSQL *conn;
+    /*
+    MYSQL *conn;
     conn = mysql_start();
     MYSQL_RES *result = mysql_get_part(conn, 93);
     MYSQL_ROW row;
@@ -31,19 +32,17 @@ int main()
         rownum++;
     }
     mysql_free_result(result);
-    mysql_finish(conn);*/
-
-    char *line = "It's just so MIC\n\n";
-    char *cpy = malloc(sizeof(*cpy)*(1 + strlen(line)));
-    strcpy(cpy, line);
-    int size;
-    printf("%s\n", line);
-    char **toks = tok_words(cpy, &size);
-    for(int i = 0; i<size; i++)
-    {
-        printf("%s\n", toks[i]);
+    mysql_finish(conn);
+*/
+    char *line = "man this is ag great sentence! isn't it, holy cow!!! boy oh boy is this a really good, really nice 'n long sentence we've got goin here. sure is goddangit.  sure fuckin is boah constrictors, emerald boahs, sea lions.  gun.oil.github.io. is the best";
+    int reps = 100000;
+    for(int i = 0; i<reps; i++){
+        char *cpy = malloc(sizeof(*cpy)*(1 + strlen(line)));
+        strcpy(cpy, line);
+        int size;
+        char **toks = tok_words(cpy, &size);
+        free(cpy);
+        free(toks);
     }
-    free(cpy);
-    free(toks);
 }
 
