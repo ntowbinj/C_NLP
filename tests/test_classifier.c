@@ -19,6 +19,11 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    int reps = 1;
+
+    if(argc == 5)
+        reps = atoi(argv[4]);
+
     struct raw_resources res = read_raw_resources(argv[1]);
 
     float **param_vecs;
@@ -43,19 +48,22 @@ int main(int argc, char *argv[])
     }
     free_raw_resources_arrays(res);
 
-    int size;
-    char *string_lit = argv[3];
-    char string[strlen(string_lit) + 1];
-    strcpy(string, string_lit);
-    char **toks = tok_words(string, &size);
-    int *indeces = tokens_to_indeces_filtered(res.tokens, toks, size);
-    int class_index = top_score_index(size, indeces, res.classes->size, param_vecs);
+    for(int i = 0; i<reps; i++)
+    {
+        int size;
+        char *string_lit = argv[3];
+        char string[strlen(string_lit) + 1];
+        strcpy(string, string_lit);
+        char **toks = tok_words(string, &size);
+        int *indeces = tokens_to_indeces_filtered(res.tokens, toks, size);
+        int class_index = top_score_index(size, indeces, res.classes->size, param_vecs);
 
-    free(toks);
-    free(indeces);
+        free(toks);
+        free(indeces);
 
-    char *class = res.classes->keys->arr[class_index];
-    printf("CHOICE: %s\n", class);
+        char *class = res.classes->keys->arr[class_index];
+        if(reps == 1) printf("CHOICE: %s\n", class);
+    }
 
 
     free_param_vecs(res.classes->size, param_vecs);
