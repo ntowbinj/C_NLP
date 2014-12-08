@@ -85,7 +85,7 @@ int rxmap_addonce(rxmap *m, char *str)
     }
 }
 
-struct rxedge *rxedge_new(char* label, int len, struct rxnode *n)
+static struct rxedge *rxedge_new(char* label, int len, struct rxnode *n)
 {
     struct rxedge *ret;
     ret = malloc(sizeof(*ret));
@@ -105,12 +105,12 @@ struct rxnode *rxnode_new(int v)
     return ret;
 }
 
-void rxnode_init_edges(struct rxnode *n)
+static void rxnode_init_edges(struct rxnode *n)
 {
     n->edges = calloc(ALPH,sizeof(*n->edges));
 }
 
-struct rxnode *rxnode_add(struct rxnode *n, char *suff, int sufflen)
+static struct rxnode *rxnode_add(struct rxnode *n, char *suff, int sufflen)
 {
     if(!sufflen)
     {
@@ -136,7 +136,7 @@ struct rxnode *rxnode_add(struct rxnode *n, char *suff, int sufflen)
     return rxnode_add(e->node, suff+i, sufflen-i);
 }
 
-void rxnode_splitedge(struct rxedge *e, int len)
+static void rxnode_splitedge(struct rxedge *e, int len)
 {
     struct rxnode *new = rxnode_new(-1);
     struct rxedge *newedge = rxedge_new(e->label+len, e->len-len, e->node);
@@ -146,31 +146,24 @@ void rxnode_splitedge(struct rxedge *e, int len)
     new->edges[IND(e->label[len])] = newedge;
 }
 
-struct rxnode *rxnode_get(struct rxnode *n, char *suff)
+static inline struct rxnode *rxnode_get(struct rxnode *n, char *suff)
 {
-    while(*suff != '\0')
+    int i, len;
+    char *label;
+    struct rxedge* e;
+    while(*suff)
     {
         if(!n->edges)
-        {
             return NULL;
-        }
-        struct rxedge *e = n->edges[IND(*suff)];
+        e = n->edges[IND(*suff)];
         if(!e)
-        {
             return NULL;
-        }
-        int i = 0;
-        while(i < e->len && e->label[i] == suff[i])
-        {
-            if(suff[i] == '\0')
-            {
-                return NULL;
-            }
-            i++;
-        }
-        suff = suff+i;
-        if(i != e->len)
+        len = e->len;
+        label = e->label;
+        for(i = 0; i< len && label[i] == suff[i]; i++);
+        if(i != len)
             return NULL;
+        suff += i;
         n = e->node;
     }
     return n;
