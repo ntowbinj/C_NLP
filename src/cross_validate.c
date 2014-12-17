@@ -14,6 +14,18 @@
 #define MAX_DOC_LEN 2048
 #define BUCKET_SIZE 50
 
+mysql_nth_query query_func = &mysql_default_nth;
+
+char *nth_query_training(int n)
+{
+    return (*query_func)(n*2); // even partitions
+}
+
+char *nth_query_validating(int n)
+{
+    return (*query_func)(n*2 + 1); // odd partitions
+}
+
 struct validator
 {
     float **param_vecs;
@@ -116,9 +128,7 @@ int main(int argc, char *argv[])
 
     struct mysql_visitor training_vis = 
     {
-        .query = MYSQL_SELECT_TEXT_AND_CLASS,
-        .start_row = 0,
-        .which_half = 0,
+        .nth_query = &nth_query_training,
         .row_count = atoi(argv[3]),
         .per_row = NULL,
         .arg = NULL
@@ -157,9 +167,7 @@ int main(int argc, char *argv[])
 
     struct mysql_visitor validate_vis =
     {
-        .query = MYSQL_SELECT_TEXT_AND_CLASS,
-        .start_row = 0,
-        .which_half = 1,
+        .nth_query = &nth_query_validating,
         .row_count = atoi(argv[4]),
         .per_row = &per_row,
         .arg = &v

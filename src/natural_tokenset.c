@@ -11,6 +11,14 @@
 
 #define MAXLEN 15
 
+char *text_only(int n)
+{
+    char *query = malloc(1024 * sizeof(*query));
+    sprintf(query, MYSQL_SELECT_TEXT, n);
+    return query;
+}
+
+
 struct natural_arg
 {
     int *counts;
@@ -58,10 +66,8 @@ int main(int argc, char *argv[])
 
     struct mysql_visitor natural_vis =
     {
-        .query = MYSQL_SELECT_TEXT,
-        .start_row = 0,
+        .nth_query = &text_only,
         .row_count = atoi(argv[1]),
-        .which_half = -1,
         .per_row = &natural_per_row,
         .arg = &arg
     };

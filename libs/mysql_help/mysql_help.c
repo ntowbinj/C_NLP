@@ -22,39 +22,32 @@ void mysql_finish(MYSQL *conn)
     mysql_library_end();
 }
 
-MYSQL_RES *mysql_get_part(MYSQL *conn, int part)
+char *mysql_default_nth(int n)
 {
-    return mysql_query_part(conn, part, MYSQL_SELECT_TEXT);
+    char *query = malloc(1024 * sizeof(*query));
+    sprintf(query, MYSQL_SELECT_TEXT_AND_CLASS, n);
+    return query;
 }
 
-MYSQL_RES *mysql_query_part(MYSQL *conn, int part, char *query)
-{
-    // in case the partition number is 10 digits (never)
-    char str[strlen(query) + 10];
-    sprintf(str, query, part);
-    printf("%s\n", str);
-    mysql_query(conn, str);
-    return mysql_store_result(conn);
-}
 
 void mysql_visit_rows(MYSQL *conn, struct mysql_visitor visitor)
 {
     MYSQL_ROW row;
     MYSQL_RES *result;
-    int part, rownum;
-    part = rownum = 0;
-    if(visitor.which_half != -1)
-        part = visitor.which_half; // 0/1 mod 2, even/odd
-    while(part<NUMPARTS && rownum<visitor.row_count)
+    char *query_str;
+    int rownum = 0;
+    for(int n = 0; rownum<visitor.row_count; n++)
     {
-        result = mysql_query_part(conn, part, visitor.query);
-        part++;
-        if(visitor.which_half != -1) part++; // skip one
-        while((row = mysql_fetch_row(result)) && rownum<visitor.row_count)
-        {
+        if(!(query_str = (*visitor.nth_query)(n))) // NULL signals end
+            break;
+        printf("%s\n", query_str);
+        mysql_query(conn, query_str);
+        result = mysql_store_result(conn);
+
+        while((row = mysql_fetch_row(result)) && rownum++<visitor.row_count)
             (*visitor.per_row)(row, visitor.arg);
-            rownum++;
-        }
+
         mysql_free_result(result);
+        free(query_str);
     }
 }

@@ -61,7 +61,11 @@ int main(int argc, char *argv[])
         free(toks);
         free(indeces);
 
-        char *class = res.classes->keys->arr[class_index];
+        char *class;
+        if(class_index == -1)
+            class = "";
+        else
+            class = res.classes->keys->arr[class_index];
         if(reps == 1) printf("CHOICE: %s\n", class);
     }
 

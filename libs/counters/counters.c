@@ -222,6 +222,7 @@ struct raw_resources build_raw_resources(struct build_params params, struct mysq
     ret.classes = classes;
     ret.tokens = tokens;
 
+
     switch(model)
     {
         case BERNOULLI:

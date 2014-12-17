@@ -20,9 +20,7 @@ int main(int argc, char *argv[])
 
     struct mysql_visitor visitor = 
     {
-        .query = MYSQL_SELECT_TEXT_AND_CLASS,
-        .start_row = 0,
-        .which_half = -1,
+        .nth_query = &mysql_default_nth,
         .row_count = atoi(argv[3]),
         .per_row = NULL,
         .arg = NULL

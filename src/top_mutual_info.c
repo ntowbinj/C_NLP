@@ -71,14 +71,11 @@ int main(int argc, char *argv[])
 
     struct mysql_visitor training_vis = 
     {
-        .query = MYSQL_SELECT_TEXT_AND_CLASS,
-        .start_row = 0,
-        .which_half = 0,
+        .nth_query = &mysql_default_nth,
         .row_count = atoi(argv[3]),
         .per_row = NULL,
         .arg = NULL
     };
-
 
     struct build_params params = 
     {
